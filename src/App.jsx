@@ -22,16 +22,15 @@ const firebaseConfig = {
   measurementId: "G-11YJK1JPV7"
 };
 
-// Use environment variable for Gemini, or fallback to empty string to prevent crash if missing
-// If you have a VITE_GEMINI_API_KEY in your .env file, it will use that.
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || ""; 
+// DEV MODE TOGGLE: Set to true to bypass authentication checks
+const DEV_MODE = true; 
 
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || ""; 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = 'rob-west-plumbing-main';
 
-// --- DEFAULT CONTENT (Fallback / Initial State) ---
 const DEFAULT_CONTENT = {
   pages: [
     { id: 'home', label: 'Home', type: 'fixed', enabled: true, order: 0 },
@@ -40,7 +39,7 @@ const DEFAULT_CONTENT = {
     { id: 'about', label: 'About', type: 'fixed', enabled: true, order: 3 },
   ],
   global: {
-    logo: "/IMG_20251219_082826329_HDR.jpg", // Ensure this file is in the 'public' folder
+    logo: "/IMG_20251219_082826329_HDR.jpg", 
     phone: "(773) 290-8232",
     address: "1102 N California Ave",
     hours: "7 AM - 7 PM",
@@ -75,8 +74,6 @@ const DEFAULT_CONTENT = {
   }
 };
 
-// --- UTILITIES ---
-
 const handleImageError = (e) => {
   e.target.onerror = null; 
   e.target.src = 'https://placehold.co/800x600/064e3b/ffffff?text=Image+Unavailable';
@@ -110,13 +107,6 @@ const compressImage = (file) => {
   });
 };
 
-const getAssetPath = (fileName) => {
-  // Points to root/public folder
-  return `/${fileName.replace(/^\//, '')}`; 
-};
-
-// --- COMPONENTS ---
-
 const RobWestLogo = ({ className = "h-16 w-auto", logoUrl }) => {
   return (
     <div className={`${className} flex items-center justify-start overflow-hidden relative`}>
@@ -127,14 +117,13 @@ const RobWestLogo = ({ className = "h-16 w-auto", logoUrl }) => {
         onError={(e) => {
           e.target.onerror = null;
           e.target.style.display = 'none';
-          e.target.parentNode.innerHTML = '<div class="text-[10px] bg-red-100 text-red-600 p-1 border border-red-300 rounded font-bold">Logo Missing (Check Public Folder)</div>';
+          e.target.parentNode.innerHTML = '<div class="text-[10px] bg-red-100 text-red-600 p-1 border border-red-300 rounded font-bold">Logo Missing</div>';
         }}
       />
     </div>
   );
 };
 
-// --- GEMINI AI ASSISTANT ---
 const GeminiAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
@@ -211,8 +200,6 @@ const GeminiAssistant = () => {
   );
 };
 
-// --- PAGES & SECTIONS ---
-
 const MobileMenu = ({ isOpen, onClose, setPage, content }) => {
   if (!isOpen) return null;
   const pages = content.pages || DEFAULT_CONTENT.pages;
@@ -272,7 +259,6 @@ const HomePage = ({ setPage, content, reviews = [] }) => {
         </div>
       </section>
 
-      {/* REVIEWS SECTION ON HOMEPAGE */}
       <section className="py-24 bg-slate-50 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4">
            <div className="text-center mb-16">
@@ -400,7 +386,6 @@ const AboutPage = ({ content }) => (
             </div>
         </div>
         
-        {/* MEET THE TEAM SECTION */}
         {content.about.team && content.about.team.length > 0 && (
           <div className="space-y-16">
              <div className="text-center max-w-3xl mx-auto">
@@ -435,6 +420,7 @@ const StaffPortal = ({ setPage, dynamicImages, content, setContent }) => {
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('pages'); 
   const [editContent, setEditContent] = useState(content);
+  const [isBypassed, setIsBypassed] = useState(false); // NEW: State for Dev Bypass
 
   useEffect(() => { const u = onAuthStateChanged(auth, setUser); return () => u(); }, []);
   useEffect(() => { setEditContent(content); }, [content]);
@@ -529,23 +515,23 @@ const StaffPortal = ({ setPage, dynamicImages, content, setContent }) => {
   };
 
   const saveToGallery = async () => {
-    if (!fileData || !user) return;
+    if (!fileData || (!user && !isBypassed)) return;
     setLoading(true);
     try { 
-      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'gallery'), { url: fileData, createdAt: new Date().toISOString(), uploadedBy: user.uid }); 
+      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'gallery'), { url: fileData, createdAt: new Date().toISOString(), uploadedBy: user?.uid || "dev-mode" }); 
       setSuccess(true); setFileData(null); setTimeout(() => setSuccess(false), 3000); 
     } catch { setError('Failed'); } finally { setLoading(false); }
   };
 
   const saveContent = async () => {
-    if (!user) return;
+    if (!user && !isBypassed) return;
     setLoading(true);
     try {
       await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'site_content', 'main'), editContent);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      setError("Failed to save content");
+      setError("Failed to save content. Check Firebase Rules.");
     } finally {
       setLoading(false);
     }
@@ -553,33 +539,47 @@ const StaffPortal = ({ setPage, dynamicImages, content, setContent }) => {
 
   const deleteImage = async (docId) => { if(confirm("Delete?")) { try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gallery', docId)); } catch { setError("Failed"); } } };
 
-  // if (!user || user.isAnonymous) {
-  //   return (
-  //     <div className="min-h-[60vh] flex items-center justify-center p-4 animate-in fade-in duration-500">
-  //       <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-100 w-full max-w-md text-center">
-  //         <Lock className="w-16 h-16 text-emerald-600 mx-auto mb-6" /><h2 className="text-3xl font-black mb-2 uppercase tracking-tighter">Staff Portal</h2>
-  //         <form onSubmit={handleLogin} className="space-y-4">
-  //           <input type="text" required placeholder="Email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold" />
-  //           <input type="password" required placeholder="Password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold" />
-  //           {error && <div className="text-red-500 text-xs font-bold">{error}</div>}
-  //           <button type="submit" className="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-emerald-700">{loading ? <Loader2 className="animate-spin" /> : 'Login'}</button>
-  //         </form>
-  //       </div>
-  //     </div>
-  //   );
-  // }
+  // UI GATE: Show dashboard if Logged In OR Dev Mode Bypassed
+  if (!isBypassed && (!user || user.isAnonymous)) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center p-4 animate-in fade-in duration-500">
+        <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-100 w-full max-w-md text-center">
+          <Lock className="w-16 h-16 text-emerald-600 mx-auto mb-6" />
+          <h2 className="text-3xl font-black mb-2 uppercase tracking-tighter">Staff Portal</h2>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <input type="text" required placeholder="Email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold" />
+            <input type="password" required placeholder="Password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold" />
+            {error && <div className="text-red-500 text-xs font-bold">{error}</div>}
+            <button type="submit" className="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-emerald-700">{loading ? <Loader2 className="animate-spin" /> : 'Login'}</button>
+          </form>
+
+          {/* DEV MODE BYPASS BUTTON */}
+          {DEV_MODE && (
+            <div className="mt-8 pt-8 border-t border-slate-100">
+               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Development Tools Active</p>
+               <button 
+                  onClick={() => setIsBypassed(true)}
+                  className="w-full bg-slate-800 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-700 transition-all border-b-4 border-slate-950 active:border-b-0 active:translate-y-1"
+               >
+                  <PenTool size={18} /> Bypass Login (Dev Mode)
+               </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[70vh] p-4 lg:p-8 max-w-7xl mx-auto animate-in fade-in duration-500">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-4xl font-black uppercase tracking-tighter">Staff Dashboard</h2>
-          <p className="text-emerald-600 font-bold">{user?.email}</p>
+          <p className="text-emerald-600 font-bold">{isBypassed ? "DEV MODE ACTIVE" : user?.email}</p>
         </div>
-        <button onClick={() => { signOut(auth); }} className="flex items-center gap-2 text-slate-500 font-bold hover:text-red-500 uppercase text-xs">Logout <LogOut size={16} /></button>
+        <button onClick={() => { setIsBypassed(false); signOut(auth); }} className="flex items-center gap-2 text-slate-500 font-bold hover:text-red-500 uppercase text-xs">Logout <LogOut size={16} /></button>
       </div>
       
-      {/* TABS */}
       <div className="flex gap-4 mb-8 overflow-x-auto pb-2">
         <button onClick={() => setActiveTab('pages')} className={`px-6 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'pages' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-100'}`}>Pages & Navigation</button>
         <button onClick={() => setActiveTab('content')} className={`px-6 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'content' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-100'}`}>Site Editor</button>
@@ -606,31 +606,23 @@ const StaffPortal = ({ setPage, dynamicImages, content, setContent }) => {
         </div>
       )}
 
-      {/* TEAM MANAGER TAB */}
       {activeTab === 'team' && (
         <div className="bg-white p-6 lg:p-10 rounded-[2.5rem] shadow-xl border border-slate-200">
-           {/* Header */}
            <div className="flex justify-between items-center mb-8 pb-8 border-b border-slate-100">
               <div><h3 className="text-2xl font-black uppercase tracking-tight">Team Manager</h3><p className="text-slate-500 text-sm">Add, edit, or remove team members.</p></div>
               <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-700 flex items-center gap-2 shadow-lg hover:scale-105 transition-all">{loading ? <Loader2 className="animate-spin" /> : <><Save size={20} /> Save Changes</>}</button>
            </div>
            
-           {success && <div className="mb-6 bg-emerald-100 text-emerald-800 p-4 rounded-xl font-bold flex items-center gap-2"><CheckCircle2 /> Team Updated Successfully!</div>}
-
-           {/* Grid Layout */}
            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Add Button Card */}
               <button onClick={addTeamMember} className="border-3 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center p-8 hover:border-emerald-400 hover:bg-emerald-50 transition-all group h-full min-h-[400px]">
                  <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm"><Plus size={32} /></div>
                  <span className="font-black text-emerald-800 uppercase tracking-tight">Add Team Member</span>
               </button>
 
-              {/* Member Cards */}
               {editContent.about.team?.map((member, idx) => (
                  <div key={idx} className="bg-slate-50 p-6 rounded-[2rem] border border-slate-200 relative group transition-all hover:shadow-lg hover:border-emerald-200">
                     <button onClick={() => removeTeamMember(idx)} className="absolute top-4 right-4 bg-white text-red-400 p-2 rounded-full shadow-md hover:text-red-600 hover:bg-red-50 z-10 transition-colors"><Trash2 size={16} /></button>
                     
-                    {/* Image Upload Area */}
                     <div className="aspect-square bg-white rounded-2xl mb-4 overflow-hidden relative border border-slate-200 shadow-inner group-hover:shadow-none transition-shadow">
                        <img src={member.image || "https://placehold.co/400x400/e2e8f0/64748b?text=No+Photo"} className="w-full h-full object-cover" />
                        <label className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white font-bold backdrop-blur-sm">
@@ -640,7 +632,6 @@ const StaffPortal = ({ setPage, dynamicImages, content, setContent }) => {
                        </label>
                     </div>
 
-                    {/* Inputs */}
                     <div className="space-y-3">
                        <div>
                           <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Full Name</label>
@@ -672,11 +663,8 @@ const StaffPortal = ({ setPage, dynamicImages, content, setContent }) => {
            {error && <div className="mb-6 bg-red-100 text-red-800 p-4 rounded-xl font-bold flex items-center gap-2"><AlertCircle /> {error}</div>}
 
            <div className="space-y-12">
-              {/* GLOBAL */}
               <div className="space-y-4">
                 <h4 className="font-black text-lg text-emerald-800 uppercase tracking-widest border-b border-emerald-100 pb-2">Global Settings</h4>
-                
-                {/* NEW: LOGO UPLOADER */}
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
                   <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Site Logo (Upload Business Card Here)</label>
                   <div className="flex items-center gap-4">
@@ -685,7 +673,7 @@ const StaffPortal = ({ setPage, dynamicImages, content, setContent }) => {
                     </div>
                     <div className="flex-1">
                        <input type="file" accept="image/*" onChange={(e) => handleContentImageUpload(e, 'global', 'logo')} className="text-sm font-bold text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100" />
-                       <p className="text-xs text-slate-400 mt-1">Upload the business card image here. The site will attempt to crop it to show only the logo.</p>
+                       <p className="text-xs text-slate-400 mt-1">Logo URL or local path. Business Card: /IMG_20251219_082826329_HDR.jpg</p>
                     </div>
                   </div>
                 </div>
@@ -694,26 +682,12 @@ const StaffPortal = ({ setPage, dynamicImages, content, setContent }) => {
                   <div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase">Phone Number</label><input type="text" value={editContent.global.phone} onChange={(e) => setEditContent({...editContent, global: {...editContent.global, phone: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-medium" /></div>
                   <div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase">Address</label><input type="text" value={editContent.global.address} onChange={(e) => setEditContent({...editContent, global: {...editContent.global, address: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-medium" /></div>
                 </div>
-                <div className="space-y-2">
-                   <label className="text-xs font-bold text-slate-500 uppercase">Social Media Links</label>
-                   <div className="grid md:grid-cols-3 gap-4">
-                      <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200"><Facebook size={18} className="text-blue-600 shrink-0" /><input type="text" placeholder="Facebook URL" value={editContent.global.social?.facebook || ''} onChange={(e) => setEditContent({...editContent, global: {...editContent.global, social: {...(editContent.global.social || {}), facebook: e.target.value}}})} className="bg-transparent w-full text-sm font-medium focus:outline-none" /></div>
-                      <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200"><Instagram size={18} className="text-pink-600 shrink-0" /><input type="text" placeholder="Instagram URL" value={editContent.global.social?.instagram || ''} onChange={(e) => setEditContent({...editContent, global: {...editContent.global, social: {...(editContent.global.social || {}), instagram: e.target.value}}})} className="bg-transparent w-full text-sm font-medium focus:outline-none" /></div>
-                      <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200"><Youtube size={18} className="text-red-600 shrink-0" /><input type="text" placeholder="YouTube URL" value={editContent.global.social?.youtube || ''} onChange={(e) => setEditContent({...editContent, global: {...editContent.global, social: {...(editContent.global.social || {}), youtube: e.target.value}}})} className="bg-transparent w-full text-sm font-medium focus:outline-none" /></div>
-                   </div>
-                </div>
               </div>
 
-              {/* HOME PAGE */}
               <div className="space-y-4">
                 <h4 className="font-black text-lg text-emerald-800 uppercase tracking-widest border-b border-emerald-100 pb-2">Home Page</h4>
                 <div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase">Hero Title</label><textarea rows={2} value={editContent.home.heroTitle} onChange={(e) => setEditContent({...editContent, home: {...editContent.home, heroTitle: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-medium resize-none" /></div>
                 <div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase">Hero Subtitle</label><textarea rows={3} value={editContent.home.heroSubtitle} onChange={(e) => setEditContent({...editContent, home: {...editContent.home, heroSubtitle: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-medium resize-none" /></div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase">Promo Banner Text</label><input type="text" value={editContent.home.promoText} onChange={(e) => setEditContent({...editContent, home: {...editContent.home, promoText: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-medium" /></div>
-                  <div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase">Promo Link Text</label><input type="text" value={editContent.home.promoLinkText} onChange={(e) => setEditContent({...editContent, home: {...editContent.home, promoLinkText: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-medium" /></div>
-                  <div className="space-y-2 md:col-span-2"><label className="text-xs font-bold text-slate-500 uppercase">Promo Link URL</label><input type="text" placeholder="https://facebook.com/..." value={editContent.home.promoLinkUrl || ''} onChange={(e) => setEditContent({...editContent, home: {...editContent.home, promoLinkUrl: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-medium" /></div>
-                </div>
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
                   <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Hero Background Image</label>
                   <div className="flex items-center gap-4">
@@ -722,39 +696,10 @@ const StaffPortal = ({ setPage, dynamicImages, content, setContent }) => {
                   </div>
                 </div>
               </div>
-
-              {/* SERVICES PAGE */}
-              <div className="space-y-4">
-                <h4 className="font-black text-lg text-emerald-800 uppercase tracking-widest border-b border-emerald-100 pb-2">Services Page</h4>
-                <div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase">Page Title</label><input type="text" value={editContent.services.title} onChange={(e) => setEditContent({...editContent, services: {...editContent.services, title: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-medium" /></div>
-                <div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase">Intro Description</label><textarea rows={3} value={editContent.services.description} onChange={(e) => setEditContent({...editContent, services: {...editContent.services, description: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-medium resize-none" /></div>
-              </div>
-
-              {/* COMMUNITY PAGE */}
-              <div className="space-y-4">
-                <h4 className="font-black text-lg text-emerald-800 uppercase tracking-widest border-b border-emerald-100 pb-2">Community Page</h4>
-                <div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase">Page Title</label><input type="text" value={editContent.community.title} onChange={(e) => setEditContent({...editContent, community: {...editContent.community, title: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-medium" /></div>
-                <div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase">Intro Description</label><textarea rows={3} value={editContent.community.description} onChange={(e) => setEditContent({...editContent, community: {...editContent.community, description: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-medium resize-none" /></div>
-              </div>
-
-              {/* ABOUT PAGE */}
-              <div className="space-y-4">
-                <h4 className="font-black text-lg text-emerald-800 uppercase tracking-widest border-b border-emerald-100 pb-2">About Page</h4>
-                <div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase">Page Title</label><input type="text" value={editContent.about.title} onChange={(e) => setEditContent({...editContent, about: {...editContent.about, title: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-medium" /></div>
-                <div className="space-y-2"><label className="text-xs font-bold text-slate-500 uppercase">Description</label><textarea rows={4} value={editContent.about.description} onChange={(e) => setEditContent({...editContent, about: {...editContent.about, description: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-medium resize-none" /></div>
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                  <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">About Image</label>
-                  <div className="flex items-center gap-4">
-                    <img src={editContent.about.image} className="w-32 h-20 object-cover rounded-lg border border-slate-300" />
-                    <input type="file" accept="image/*" onChange={(e) => handleContentImageUpload(e, 'about', 'image')} className="text-sm font-bold text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100" />
-                  </div>
-                </div>
-              </div>
            </div>
         </div>
       )}
 
-      {/* NEW: PAGES MANAGER TAB */}
       {activeTab === 'pages' && (
         <div className="bg-white p-6 lg:p-10 rounded-[2.5rem] shadow-xl border border-slate-200">
           <div className="flex justify-between items-center mb-8 pb-8 border-b border-slate-100">
@@ -765,11 +710,8 @@ const StaffPortal = ({ setPage, dynamicImages, content, setContent }) => {
              </div>
           </div>
 
-          {success && <div className="mb-6 bg-emerald-100 text-emerald-800 p-4 rounded-xl font-bold flex items-center gap-2"><CheckCircle2 /> Navigation Updated Successfully!</div>}
-          
           <div className="grid lg:grid-cols-2 gap-8">
             <div className="space-y-4">
-               <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Site Menu Structure</h4>
                {editContent.pages?.map((page) => (
                  <div key={page.id} className={`p-4 rounded-xl border flex items-center gap-4 ${page.enabled ? 'bg-white border-slate-200' : 'bg-slate-50 border-slate-200 opacity-75'}`}>
                     <div className="p-2 bg-slate-100 rounded-lg text-slate-400"><Layout size={20} /></div>
@@ -781,49 +723,15 @@ const StaffPortal = ({ setPage, dynamicImages, content, setContent }) => {
                            onChange={(e) => updatePageLabel(page.id, e.target.value)} 
                            className="font-bold text-slate-900 bg-transparent border-b border-transparent focus:border-emerald-500 focus:outline-none hover:border-slate-300 transition-colors w-full" 
                          />
-                         <span className="text-[10px] uppercase font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">{page.type}</span>
                       </div>
-                      <p className="text-xs text-slate-500">/{page.id}</p>
                     </div>
                     <div className="flex items-center gap-2">
                        <button onClick={() => togglePageVisibility(page.id)} className={`p-2 rounded-lg transition-colors ${page.enabled ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100' : 'text-slate-400 bg-slate-100 hover:bg-slate-200'}`}>
                          {page.enabled ? <Eye size={18} /> : <EyeOff size={18} />}
                        </button>
-                       {page.type === 'custom' && (
-                         <button onClick={() => deleteCustomPage(page.id)} className="p-2 rounded-lg text-red-400 bg-red-50 hover:bg-red-100 hover:text-red-600 transition-colors"><Trash2 size={18} /></button>
-                       )}
                     </div>
                  </div>
                ))}
-            </div>
-            
-            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 h-fit">
-               <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><Edit3 size={16} /> Edit Custom Page Content</h4>
-               <p className="text-xs text-slate-500 mb-6">Select a custom page from the list to edit its title and body content.</p>
-               
-               {editContent.pages?.filter(p => p.type === 'custom').map(page => (
-                 <div key={page.id} className="bg-white p-6 rounded-2xl border border-slate-200 mb-6 shadow-sm">
-                    <h5 className="font-bold text-lg mb-4 flex items-center gap-2">{page.label} <span className="text-xs font-normal text-slate-400">({page.id})</span></h5>
-                    <div className="space-y-4">
-                       <div>
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Page Title</label>
-                          <input type="text" value={page.title || page.label} onChange={(e) => updateCustomPageContent(page.id, 'title', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold" />
-                       </div>
-                       <div>
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Body Content</label>
-                          <textarea rows={6} value={page.content || ''} onChange={(e) => updateCustomPageContent(page.id, 'content', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm resize-none font-medium" />
-                       </div>
-                    </div>
-                 </div>
-               ))}
-
-               {editContent.pages?.filter(p => p.type === 'custom').length === 0 && (
-                 <div className="text-center py-12 text-slate-400">
-                    <Layout size={48} className="mx-auto mb-4 opacity-50" />
-                    <p className="font-bold text-sm">No custom pages yet.</p>
-                    <button onClick={addCustomPage} className="text-emerald-600 text-xs font-bold mt-2 hover:underline">Create one now</button>
-                 </div>
-               )}
             </div>
           </div>
         </div>
@@ -839,10 +747,7 @@ const FooterReviewForm = ({ onSubmit, content, reviews = [] }) => {
   const [submitted, setSubmitted] = useState(false);
   const handleSubmit = (e) => { e.preventDefault(); if(name && text) { onSubmit({ name, rating, text }); setSubmitted(true); setName(''); setText(''); setTimeout(() => setSubmitted(false), 3000); } };
   
-  // Safe access to social links
   const social = content?.global?.social || {};
-
-  // Calculate average rating
   const averageRating = reviews.length > 0 
     ? (reviews.reduce((acc, r) => acc + (parseInt(r.rating) || 0), 0) / reviews.length).toFixed(1) 
     : "5.0";
@@ -850,11 +755,8 @@ const FooterReviewForm = ({ onSubmit, content, reviews = [] }) => {
   return (
     <div className="bg-slate-900 border-t border-slate-800 py-20">
       <div className="max-w-7xl mx-auto px-4">
-        
-        {/* REVIEWS DISPLAY SECTION */}
         <div className="mb-20">
            <div className="text-center mb-12">
-              <h4 className="text-emerald-500 font-bold uppercase tracking-widest text-xs mb-3">Customer Feedback</h4>
               <h3 className="text-3xl md:text-4xl font-black text-white mb-6">What Our Neighbors Say</h3>
               <div className="inline-flex items-center justify-center gap-4 bg-slate-800 px-6 py-3 rounded-2xl border border-slate-700/50">
                  <span className="text-4xl font-black text-white">{averageRating}</span>
@@ -896,7 +798,6 @@ const FooterReviewForm = ({ onSubmit, content, reviews = [] }) => {
            )}
         </div>
 
-        {/* LEAVE A REVIEW FORM */}
         <div className="max-w-2xl mx-auto border-t border-slate-800 pt-16">
           <h4 className="text-white font-bold text-center mb-8 uppercase tracking-widest text-sm">Share Your Experience</h4>
           {submitted ? <div className="bg-emerald-600 text-white p-6 rounded-2xl text-center animate-in fade-in zoom-in"><CheckCircle2 className="mx-auto mb-2" /><p className="font-bold">Thank you for your feedback!</p></div> : 
@@ -905,63 +806,39 @@ const FooterReviewForm = ({ onSubmit, content, reviews = [] }) => {
               <textarea placeholder="Describe your experience with us..." rows={4} value={text} onChange={e => setText(e.target.value)} className="w-full bg-slate-800 text-white placeholder:text-slate-500 rounded-xl p-4 font-bold resize-none border border-slate-700 focus:border-emerald-500 focus:outline-none transition-colors" required />
               <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20">Submit Review <Send size={18} /></button>
             </form>}
-            
-            {/* SOCIAL MEDIA LINKS */}
-            <div className="flex flex-col items-center gap-6 border-t border-slate-800 pt-12">
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Connect With Us</p>
-              <div className="flex gap-4">
-                {social.facebook && <a href={social.facebook} target="_blank" rel="noopener noreferrer" className="bg-slate-800 p-4 rounded-2xl text-slate-400 hover:text-white hover:bg-[#1877F2] transition-all hover:-translate-y-1 shadow-lg"><Facebook size={24} /></a>}
-                {social.instagram && <a href={social.instagram} target="_blank" rel="noopener noreferrer" className="bg-slate-800 p-4 rounded-2xl text-slate-400 hover:text-white hover:bg-gradient-to-tr hover:from-yellow-500 hover:via-red-500 hover:to-purple-500 transition-all hover:-translate-y-1 shadow-lg"><Instagram size={24} /></a>}
-                {social.youtube && <a href={social.youtube} target="_blank" rel="noopener noreferrer" className="bg-slate-800 p-4 rounded-2xl text-slate-400 hover:text-white hover:bg-red-600 transition-all hover:-translate-y-1 shadow-lg"><Youtube size={24} /></a>}
-              </div>
-            </div>
         </div>
       </div>
     </div>
   );
 };
 
-// --- MAIN APP ---
-
 const App = () => {
   const [page, setPage] = useState('home');
   const [user, setUser] = useState(null);
   const [dynamicImages, setDynamicImages] = useState([]);
-  const [reviews, setReviews] = useState([]); // NEW: State for reviews
+  const [reviews, setReviews] = useState([]); 
   const [siteContent, setSiteContent] = useState(DEFAULT_CONTENT);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     const initAuth = async () => {
-      try {
-        await signInAnonymously(auth);
-      } catch (e) {
-        console.error("Auth failed", e);
-      }
+      try { await signInAnonymously(auth); } catch (e) { console.error("Auth failed", e); }
     };
     initAuth();
     return onAuthStateChanged(auth, setUser);
   }, []);
 
-  // Fetch Data: Gallery + Site Content + Reviews
   useEffect(() => {
     if (!user) return;
-    
-    // Gallery Sync
     const unsubGallery = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'gallery'), orderBy('createdAt', 'desc')), (s) => setDynamicImages(s.docs.map(d => ({ id: d.id, ...d.data() }))), e => console.log("Gallery Sync", e));
-    
-    // Reviews Sync (NEW)
     const unsubReviews = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'reviews'), orderBy('createdAt', 'desc')), (s) => setReviews(s.docs.map(d => ({ id: d.id, ...d.data() }))), e => console.log("Reviews Sync", e));
-
-    // Site Content Sync
     const unsubContent = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'site_content', 'main'), (s) => {
       if (s.exists()) {
         const fetched = s.data();
         setSiteContent(prev => ({
           ...prev,
           ...fetched,
-          // NEW: Ensure pages array exists
           pages: fetched.pages || prev.pages,
           global: { ...prev.global, ...fetched.global, social: { ...prev.global?.social, ...fetched.global?.social } },
           home: { ...prev.home, ...fetched.home },
@@ -971,7 +848,6 @@ const App = () => {
         }));
       }
     }, e => console.log("Content Sync", e));
-
     return () => { unsubGallery(); unsubContent(); unsubReviews(); };
   }, [user]);
 
@@ -986,27 +862,20 @@ const App = () => {
   const handleAddReview = async (d) => { if(user) await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'reviews'), { ...d, createdAt: new Date().toISOString() }); };
 
   const renderPage = () => {
-    // 1. Check if the current page is one of the fixed pages
     if (page === 'home') return <HomePage setPage={setPage} content={siteContent} reviews={reviews} />;
     if (page === 'services') return <ServicesPage content={siteContent} />;
     if (page === 'community') return <CommunityPage dynamicImages={dynamicImages} content={siteContent} />;
     if (page === 'staff') return <StaffPortal setPage={setPage} dynamicImages={dynamicImages} content={siteContent} setContent={setSiteContent} />;
     if (page === 'about') return <AboutPage content={siteContent} />;
-
-    // 2. Check if it is a Custom Page
     const customPage = siteContent.pages?.find(p => p.id === page && p.type === 'custom');
     if (customPage) return <CustomPage pageData={customPage} />;
-
-    // 3. Fallback
     return <HomePage setPage={setPage} content={siteContent} reviews={reviews} />;
   };
 
-  // Get pages from content for navigation
   const visiblePages = (siteContent.pages || DEFAULT_CONTENT.pages).filter(p => p.enabled);
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
-      {/* ... existing header and nav ... */}
       <div className="bg-emerald-950 text-white py-2 px-4 text-xs font-medium border-b border-emerald-900 hidden md:block">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex gap-6 items-center"><span className="flex items-center gap-1.5"><MapPin size={12} className="text-emerald-400" /> {siteContent.global.address}</span><span className="flex items-center gap-1.5"><Clock size={12} className="text-emerald-400" /> {siteContent.global.hours}</span></div>
@@ -1017,19 +886,11 @@ const App = () => {
       <nav className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white shadow-xl py-3' : 'bg-white/95 backdrop-blur-md py-5'}`}>
         <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
           <button onClick={() => setPage('home')} className="flex items-center gap-3 group text-left hover:opacity-80 transition-opacity">
-            {/* UPDATED: Larger height, auto width, no HTML text next to it, using dynamic logo */}
             <RobWestLogo className="h-12 md:h-20 w-auto" logoUrl={siteContent.global.logo} />
           </button>
           <div className="hidden md:flex items-center gap-10 font-bold text-sm text-slate-700 uppercase tracking-widest">
-            {/* DYNAMIC NAVIGATION MENU */}
             {visiblePages.map(p => (
-              <button 
-                key={p.id} 
-                onClick={() => setPage(p.id)} 
-                className={`transition-colors border-b-2 py-1 ${page === p.id ? 'text-emerald-600 border-emerald-600' : 'hover:text-emerald-600 border-transparent'}`}
-              >
-                {p.label}
-              </button>
+              <button key={p.id} onClick={() => setPage(p.id)} className={`transition-colors border-b-2 py-1 ${page === p.id ? 'text-emerald-600 border-emerald-600' : 'hover:text-emerald-600 border-transparent'}`}>{p.label}</button>
             ))}
             <a href={`tel:${siteContent.global.phone.replace(/\D/g,'')}`} className="bg-emerald-600 text-white px-8 py-3 rounded-2xl hover:bg-emerald-700 shadow-lg flex items-center gap-2">Book Now <ArrowRight size={16} /></a>
           </div>
@@ -1041,12 +902,8 @@ const App = () => {
 
       <main className="min-h-[70vh]">{renderPage()}</main>
       <GeminiAssistant />
-      {/* Pass reviews state to footer */}
       <FooterReviewForm onSubmit={handleAddReview} content={siteContent} reviews={reviews} />
-      
-      <footer className="bg-slate-950 text-slate-400 py-12">
-        <div className="max-w-7xl mx-auto px-4 text-center md:text-left"><p className="text-xs uppercase tracking-widest">© 2025 Rob West Plumbing Inc. • {siteContent.global.license}</p></div>
-      </footer>
+      <footer className="bg-slate-950 text-slate-400 py-12 text-center"><p className="text-xs uppercase tracking-widest">© 2025 Rob West Plumbing Inc. • {siteContent.global.license}</p></footer>
     </div>
   );
 };
