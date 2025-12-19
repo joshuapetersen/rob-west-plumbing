@@ -10,22 +10,25 @@ import {
   Sparkles, Bot, MessageSquare, SendHorizontal, PenTool, Save, Edit3, Plus, User, Users, FileText, Layout, Eye, EyeOff, Crop
 } from 'lucide-react';
 
-// --- CONFIGURATION & INITIALIZATION ---
+// --- CONFIGURATION ---
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: "AIzaSyA6Bn-r5R_m7ZyUQHjC5dnwAX_KcmKtYCw",
+  authDomain: "robwestplumbing-2eb06.firebaseapp.com",
+  projectId: "robwestplumbing-2eb06",
+  storageBucket: "robwestplumbing-2eb06.firebasestorage.app",
+  messagingSenderId: "1016017584876",
+  appId: "1:1016017584876:web:2de84f833e7747ef459bc9",
+  measurementId: "G-11YJK1JPV7"
 };
+
+// Use environment variable for Gemini, or fallback to empty string to prevent crash if missing
+// If you have a VITE_GEMINI_API_KEY in your .env file, it will use that.
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || ""; 
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY; 
 const appId = 'rob-west-plumbing-main';
 
 // --- DEFAULT CONTENT (Fallback / Initial State) ---
@@ -37,7 +40,7 @@ const DEFAULT_CONTENT = {
     { id: 'about', label: 'About', type: 'fixed', enabled: true, order: 3 },
   ],
   global: {
-    logo: "./IMG_20251219_082826329_HDR.jpg", 
+    logo: "/IMG_20251219_082826329_HDR.jpg", // Ensure this file is in the 'public' folder
     phone: "(773) 290-8232",
     address: "1102 N California Ave",
     hours: "7 AM - 7 PM",
@@ -108,7 +111,8 @@ const compressImage = (file) => {
 };
 
 const getAssetPath = (fileName) => {
-  return `./${fileName}`;
+  // Points to root/public folder
+  return `/${fileName.replace(/^\//, '')}`; 
 };
 
 // --- COMPONENTS ---
@@ -123,7 +127,7 @@ const RobWestLogo = ({ className = "h-16 w-auto", logoUrl }) => {
         onError={(e) => {
           e.target.onerror = null;
           e.target.style.display = 'none';
-          e.target.parentNode.innerHTML = '<div class="text-[10px] bg-red-100 text-red-600 p-1 border border-red-300 rounded font-bold">Logo Missing</div>';
+          e.target.parentNode.innerHTML = '<div class="text-[10px] bg-red-100 text-red-600 p-1 border border-red-300 rounded font-bold">Logo Missing (Check Public Folder)</div>';
         }}
       />
     </div>
@@ -222,7 +226,6 @@ const MobileMenu = ({ isOpen, onClose, setPage, content }) => {
           <button key={p.id} onClick={() => { setPage(p.id); onClose(); }} className="text-3xl font-black text-white uppercase tracking-tighter hover:text-emerald-400 transition-colors">{p.label}</button>
         ))}
         <button onClick={() => { setPage('staff'); onClose(); }} className="text-3xl font-black text-slate-700 uppercase tracking-tighter hover:text-emerald-400 transition-colors">Staff</button>
-        
         <a href={`tel:${content.global.phone.replace(/\D/g,'')}`} className="mt-8 bg-emerald-500 text-white px-8 py-4 rounded-2xl font-bold text-xl flex items-center justify-center gap-3 mx-auto w-fit">
           <Phone /> Call Now
         </a>
