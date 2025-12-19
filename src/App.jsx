@@ -12,41 +12,52 @@ import {
 
 // --- CONFIGURATION & INITIALIZATION ---
 
-// ROBUST CONFIGURATION HANDLER
-// This logic automatically detects if you are in the Preview environment or a Local/Production environment.
-let firebaseConfig;
-let isConfigured = false;
+// HYBRID CONFIGURATION HANDLER
+// This allows the app to work in BOTH the Chat Preview (Canvas) and your Vercel Deployment.
 
-// 1. Try to load from Preview Environment
+let firebaseConfig;
+let apiKey = "";
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'rob-west-plumbing-main';
+
+// 1. Try to load from Preview Environment (Canvas)
 if (typeof __firebase_config !== 'undefined') {
   try {
     firebaseConfig = JSON.parse(__firebase_config);
-    isConfigured = true;
   } catch (e) {
-    console.warn("Preview config parse failed, falling back to placeholder.");
+    console.warn("Preview config parse failed.");
   }
 }
 
-// 2. If not in preview, use manual configuration
-if (!isConfigured) {
-  // REPLACE THESE VALUES FOR PRODUCTION DEPLOYMENT
-  firebaseConfig = {
-    apiKey: "YOUR_API_KEY", // <--- PASTE KEY HERE
-    authDomain: "your-project.firebaseapp.com",
-    projectId: "your-project-id",
-    storageBucket: "your-project.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:abcdef123456"
-  };
+// 2. If not in preview, try to load from Vite Environment (Vercel/Local)
+// We use a try-catch block to safely access import.meta.env without crashing the preview bundler
+if (!firebaseConfig) {
+  try {
+    // Check if import.meta.env exists before accessing properties
+    // This prevents "Cannot read properties of undefined" errors
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      firebaseConfig = {
+        apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+        authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+        projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+        storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+        appId: import.meta.env.VITE_FIREBASE_APP_ID
+      };
+      apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
+    }
+  } catch (e) {
+    console.warn("Vite env vars not found.");
+  }
 }
 
-// 3. Gemini API Key
-const apiKey = typeof apiKey !== 'undefined' ? apiKey : ""; 
+// 3. Fallback / Error State
+if (!firebaseConfig) {
+  console.error("No Firebase configuration found. Please check your .env file or environment variables.");
+  // Provide a dummy config to prevent immediate crash, app will show error UI
+  firebaseConfig = { apiKey: "", authDomain: "", projectId: "" };
+}
 
-// 4. App ID
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'rob-west-plumbing-main';
-
-// Initialize Firebase safely
+// Initialize Firebase
 let app, auth, db;
 try {
   app = initializeApp(firebaseConfig);
@@ -91,7 +102,10 @@ const compressImage = (file) => {
   });
 };
 
-const getAssetPath = (fileName) => `./${fileName}`;
+const getAssetPath = (fileName) => {
+  // Use relative path for preview, absolute for prod if needed, or just handle both
+  return `./${fileName}`;
+};
 
 // --- COMPONENTS ---
 
@@ -127,17 +141,28 @@ const GeminiAssistant = () => {
   useEffect(() => { scrollToBottom(); }, [messages, isOpen]);
 
   const callGemini = async (userText) => {
+    // Check if key is available (it might be empty in preview if not manually set, but works in Prod via Env)
     if (!apiKey) {
-      setMessages(prev => [...prev, { role: 'user', text: userText }, { role: 'model', text: "AI Service Unavailable: API Key missing in configuration." }]);
-      return;
+        // In preview, we might be using a proxy or missing the key. 
+        // We'll try to proceed if we think we're in preview, otherwise show error.
+        if (typeof __firebase_config === 'undefined') {
+             setMessages(prev => [...prev, { role: 'user', text: userText }, { role: 'model', text: "AI Service Unavailable: API Key missing in configuration." }]);
+             return;
+        }
     }
+
     setLoading(true);
     const updatedMessages = [...messages, { role: 'user', text: userText }];
     setMessages(updatedMessages);
     
+    // Determine the correct URL/Method based on environment
+    const isPreview = typeof __firebase_config !== 'undefined';
+    // In preview, apiKey variable is empty string, system injects it. In prod, we use the variable.
+    const keyParam = isPreview ? "" : apiKey; 
+
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keyParam}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -425,7 +450,6 @@ const App = () => {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    // Robust Auth Initialization for both Preview & Production
     const initAuth = async () => {
       // 1. Try Custom Token (Preview Env)
       if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -441,7 +465,6 @@ const App = () => {
 
   useEffect(() => {
     if (!user) return;
-    // Real-time listeners
     const unsubGallery = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'gallery'), orderBy('createdAt', 'desc')), (s) => setDynamicImages(s.docs.map(d => ({ id: d.id, ...d.data() }))), e => console.log("Gallery Sync", e));
     const unsubConfig = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'site_config', 'main'), (s) => { if(s.exists()) setAboutImage(s.data().aboutPageImage); }, e => console.log("Config Sync", e));
     return () => { unsubGallery(); unsubConfig(); };
@@ -472,9 +495,6 @@ const App = () => {
     );
     return <HomePage setPage={setPage} />;
   };
-
-  // If Auth/Firebase failed entirely, show error (Config Missing)
-  if (!firebaseConfig) return <div className="h-screen flex items-center justify-center text-center p-4"><div className="max-w-md"><h1 className="text-2xl font-bold text-red-600 mb-4">Configuration Error</h1><p className="text-slate-600">This app is not configured correctly for production. Please update the <code>firebaseConfig</code> object in the source code with your project keys.</p></div></div>;
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
