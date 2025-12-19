@@ -553,21 +553,21 @@ const StaffPortal = ({ setPage, dynamicImages, content, setContent }) => {
 
   const deleteImage = async (docId) => { if(confirm("Delete?")) { try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gallery', docId)); } catch { setError("Failed"); } } };
 
-  if (!user || user.isAnonymous) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center p-4 animate-in fade-in duration-500">
-        <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-100 w-full max-w-md text-center">
-          <Lock className="w-16 h-16 text-emerald-600 mx-auto mb-6" /><h2 className="text-3xl font-black mb-2 uppercase tracking-tighter">Staff Portal</h2>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <input type="text" required placeholder="Email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold" />
-            <input type="password" required placeholder="Password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold" />
-            {error && <div className="text-red-500 text-xs font-bold">{error}</div>}
-            <button type="submit" className="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-emerald-700">{loading ? <Loader2 className="animate-spin" /> : 'Login'}</button>
-          </form>
-        </div>
-      </div>
-    );
-  }
+  // if (!user || user.isAnonymous) {
+  //   return (
+  //     <div className="min-h-[60vh] flex items-center justify-center p-4 animate-in fade-in duration-500">
+  //       <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-100 w-full max-w-md text-center">
+  //         <Lock className="w-16 h-16 text-emerald-600 mx-auto mb-6" /><h2 className="text-3xl font-black mb-2 uppercase tracking-tighter">Staff Portal</h2>
+  //         <form onSubmit={handleLogin} className="space-y-4">
+  //           <input type="text" required placeholder="Email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold" />
+  //           <input type="password" required placeholder="Password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold" />
+  //           {error && <div className="text-red-500 text-xs font-bold">{error}</div>}
+  //           <button type="submit" className="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-emerald-700">{loading ? <Loader2 className="animate-spin" /> : 'Login'}</button>
+  //         </form>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="min-h-[70vh] p-4 lg:p-8 max-w-7xl mx-auto animate-in fade-in duration-500">
