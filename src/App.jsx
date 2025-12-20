@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { auth, db, appId } from './firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
-import { onSnapshot, doc } from 'firebase/firestore';
+import { onSnapshot, doc, collection, query, orderBy } from 'firebase/firestore';
 import { 
   Phone, Mail, MapPin, Clock, Droplets, Leaf, ShieldCheck, Star, 
   Menu, X, ArrowRight, Instagram, Facebook, Youtube, CheckCircle2, 
@@ -128,6 +128,7 @@ const RobWestLogo = ({ className = "h-16 w-auto", logoUrl }) => {
 const App = () => {
   const [content, setContent] = useState(DEFAULT_CONTENT);
   const [user, setUser] = useState(null);
+  const [dynamicImages, setDynamicImages] = useState([]);
   const [page, setPage] = useState(() => {
     // Load page from localStorage on initial load
     return localStorage.getItem('currentPage') || 'home';
@@ -166,6 +167,14 @@ const App = () => {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (!db) return;
+    const unsubscribe = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'gallery'), orderBy('createdAt', 'desc')), (snapshot) => {
+      setDynamicImages(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsubscribe();
+  }, []);
+
   const renderPage = () => {
     const pageData = content.pages?.find(p => p.id === page);
     if (pageData && pageData.type === 'custom') {
@@ -177,7 +186,7 @@ const App = () => {
       case 'services':
         return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><ServicesPage content={content} /></Suspense>;
       case 'community':
-        return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><CommunityPage content={content} /></Suspense>;
+        return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><CommunityPage content={content} dynamicImages={dynamicImages} /></Suspense>;
       case 'about':
         return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><AboutPage content={content} /></Suspense>;
       case 'dashboard':
