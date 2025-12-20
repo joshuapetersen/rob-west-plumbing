@@ -79,6 +79,17 @@ const StaffDashboard = () => {
   const [fileData, setFileData] = useState(null);
   const [success, setSuccess] = useState(false);
 
+  // Strip large image arrays before saving to keep document under 1MB
+  const sanitizeContentForSave = useCallback((data) => {
+    const clone = JSON.parse(JSON.stringify(data));
+    ['home', 'services', 'community', 'about'].forEach((section) => {
+      if (clone[section] && clone[section].images) {
+        clone[section].images = []; // do not persist additional images in main content doc
+      }
+    });
+    return clone;
+  }, []);
+
   // 1. Authentication Listener
   useEffect(() => {
     if (!auth) return;
@@ -140,17 +151,17 @@ const StaffDashboard = () => {
     setError('');
     try {
       const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'site_content', 'main');
-      
-      // Ensure all nested objects are properly structured
-      const dataToSave = {
+
+      // Ensure all nested objects are properly structured and strip large arrays
+      const dataToSave = sanitizeContentForSave({
         pages: editContent.pages || [],
         global: editContent.global || {},
         home: editContent.home || {},
         services: editContent.services || {},
         community: editContent.community || {},
         about: editContent.about || {},
-      };
-      
+      });
+
       console.log('Saving content:', dataToSave);
       console.log('User:', user.email);
       console.log('AppId:', appId);
@@ -253,7 +264,7 @@ const StaffDashboard = () => {
       setEditContent(updated);
       if (user) {
         const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'site_content', 'main');
-        await setDoc(docRef, updated, { merge: true });
+        await setDoc(docRef, sanitizeContentForSave(updated), { merge: true });
       }
     } catch { setError("Image error"); }
   };
@@ -274,7 +285,7 @@ const StaffDashboard = () => {
       setEditContent(updated);
       if (user) {
         const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'site_content', 'main');
-        await setDoc(docRef, updated, { merge: true });
+        await setDoc(docRef, sanitizeContentForSave(updated), { merge: true });
         await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'gallery'), {
           url: compressed,
           createdAt: new Date().toISOString(),
@@ -301,7 +312,7 @@ const StaffDashboard = () => {
     if (user) {
       try {
         const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'site_content', 'main');
-        await setDoc(docRef, updated, { merge: true });
+        await setDoc(docRef, sanitizeContentForSave(updated), { merge: true });
         if (imageToRemove) {
           const galleryQuery = query(
             collection(db, 'artifacts', appId, 'public', 'data', 'gallery'),
