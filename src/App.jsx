@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { auth, db, appId } from './firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
-import { onSnapshot, doc, collection, query, orderBy } from 'firebase/firestore';
+import { onSnapshot, doc, collection, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { 
   Phone, Mail, MapPin, Clock, Droplets, Leaf, ShieldCheck, Star, 
   Menu, X, ArrowRight, Instagram, Facebook, Youtube, CheckCircle2, 
@@ -129,6 +129,7 @@ const App = () => {
   const [content, setContent] = useState(DEFAULT_CONTENT);
   const [user, setUser] = useState(null);
   const [dynamicImages, setDynamicImages] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [contentError, setContentError] = useState('');
   const [page, setPage] = useState(() => {
     // Load page from localStorage on initial load
@@ -190,6 +191,37 @@ const App = () => {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (!db) return;
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'artifacts', appId, 'public', 'data', 'reviews'), orderBy('createdAt', 'desc')),
+      (snapshot) => {
+        setReviews(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      },
+      (err) => {
+        console.error('Reviews listener error:', err);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  const handleSubmitReview = async (review) => {
+    try {
+      await addDoc(
+        collection(db, 'artifacts', appId, 'public', 'data', 'reviews'),
+        {
+          ...review,
+          rating: parseInt(review.rating) || 5,
+          createdAt: serverTimestamp(),
+        }
+      );
+      console.log('[App] Review submitted successfully');
+    } catch (err) {
+      console.error('[App] Error submitting review:', err);
+      alert('Failed to submit review. Please try again.');
+    }
+  };
+
   const renderPage = () => {
     const pageData = content.pages?.find(p => p.id === page);
     if (pageData && pageData.type === 'custom') {
@@ -219,23 +251,23 @@ const App = () => {
         </div>
       )}
       {/* Top Bar */}
-      <div className="bg-emerald-950 text-white py-2 px-4 text-xs font-medium border-b border-emerald-900 hidden md:block">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex gap-6 items-center">
-            <span className="flex items-center gap-1.5"><MapPin size={12} className="text-emerald-400" /> {content.global.address}</span>
-            <span className="flex items-center gap-1.5"><Clock size={12} className="text-emerald-400" /> {content.global.hours}</span>
+      <div className="bg-emerald-950 text-white py-2 px-3 sm:px-4 text-xs sm:text-sm font-medium border-b border-emerald-900 hidden md:block">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
+          <div className="flex gap-4 sm:gap-6 items-center flex-wrap text-xs">
+            <span className="flex items-center gap-1.5 whitespace-nowrap"><MapPin size={12} className="text-emerald-400 flex-shrink-0" /> {content.global.address}</span>
+            <span className="flex items-center gap-1.5 whitespace-nowrap"><Clock size={12} className="text-emerald-400 flex-shrink-0" /> {content.global.hours}</span>
           </div>
-          <div className="flex items-center gap-6">
-            <button onClick={() => { console.log('[App] Staff Portal tab clicked'); setPage('dashboard'); }} className="hover:text-emerald-400 flex items-center gap-1 transition-colors"><Lock size={12} /> Staff Portal</button>
-            <a href={`tel:${content.global.phone.replace(/\D/g,'')}`} className="hover:text-emerald-300 font-bold">{content.global.phone}</a>
+          <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm">
+            <button onClick={() => { console.log('[App] Staff Portal tab clicked'); setPage('dashboard'); }} className="hover:text-emerald-400 flex items-center gap-1 transition-colors whitespace-nowrap"><Lock size={12} /> Staff Portal</button>
+            <a href={`tel:${content.global.phone.replace(/\D/g,'')}`} className="hover:text-emerald-300 font-bold whitespace-nowrap">{content.global.phone}</a>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
       <nav className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-14 sm:h-16">
             <div className="flex items-center">
               <RobWestLogo logoUrl={content.global?.logo} />
             </div>
@@ -257,15 +289,15 @@ const App = () => {
 
       {/* Footer */}
       <footer className="bg-slate-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid md:grid-cols-4 gap-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
             <div>
-              <RobWestLogo className="h-12 w-auto mb-4" logoUrl={content.global?.logo} />
-              <p className="text-slate-300 text-sm">{content.global?.tagline}</p>
+              <RobWestLogo className="h-10 sm:h-12 w-auto mb-3 sm:mb-4" logoUrl={content.global?.logo} />
+              <p className="text-slate-300 text-xs sm:text-sm">{content.global?.tagline}</p>
             </div>
             <div>
-              <h3 className="text-lg font-bold mb-4">Services</h3>
-              <ul className="space-y-2 text-sm text-slate-300">
+              <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4">Services</h3>
+              <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-slate-300">
                 <li>Residential Plumbing</li>
                 <li>Commercial Plumbing</li>
                 <li>Emergency Repairs</li>
@@ -273,24 +305,24 @@ const App = () => {
               </ul>
             </div>
             <div>
-              <h3 className="text-lg font-bold mb-4">Contact</h3>
-              <div className="space-y-2 text-sm text-slate-300">
-                <div className="flex items-center gap-2"><Phone size={16} /> {content.global?.phone}</div>
-                <div className="flex items-center gap-2"><Mail size={16} /> {content.global?.email}</div>
-                <div className="flex items-center gap-2"><MapPin size={16} /> {content.global?.address}</div>
+              <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4">Contact</h3>
+              <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-slate-300">
+                <div className="flex items-center gap-2"><Phone size={14} /> {content.global?.phone}</div>
+                <div className="flex items-center gap-2"><Mail size={14} /> {content.global?.email}</div>
+                <div className="flex items-center gap-2"><MapPin size={14} /> {content.global?.address}</div>
               </div>
             </div>
             <div>
-              <h3 className="text-lg font-bold mb-4">Follow Us</h3>
-              <div className="flex gap-4">
-                {content.global?.social?.facebook && <a href={content.global.social.facebook} className="text-slate-300 hover:text-white transition-colors"><Facebook size={20} /></a>}
-                {content.global?.social?.instagram && <a href={content.global.social.instagram} className="text-slate-300 hover:text-white transition-colors"><Instagram size={20} /></a>}
-                {content.global?.social?.youtube && <a href={content.global.social.youtube} className="text-slate-300 hover:text-white transition-colors"><Youtube size={20} /></a>}
+              <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4">Follow Us</h3>
+              <div className="flex gap-3 sm:gap-4">
+                {content.global?.social?.facebook && <a href={content.global.social.facebook} className="text-slate-300 hover:text-white transition-colors"><Facebook size={18} /></a>}
+                {content.global?.social?.instagram && <a href={content.global.social.instagram} className="text-slate-300 hover:text-white transition-colors"><Instagram size={18} /></a>}
+                {content.global?.social?.youtube && <a href={content.global.social.youtube} className="text-slate-300 hover:text-white transition-colors"><Youtube size={18} /></a>}
               </div>
             </div>
           </div>
-          <div className="border-t border-slate-800 mt-8 pt-8 text-center">
-            <Suspense fallback={<div></div>}><FooterReviewFormLazy onSubmit={(review) => console.log('Review submitted:', review)} content={content} reviews={[]} /></Suspense>
+          <div className="border-t border-slate-800 mt-6 sm:mt-8 pt-6 sm:pt-8 text-center">
+            <Suspense fallback={<div></div>}><FooterReviewFormLazy onSubmit={handleSubmitReview} content={content} reviews={reviews} /></Suspense>
           </div>
         </div>
       </footer>
