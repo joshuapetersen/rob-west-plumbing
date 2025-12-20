@@ -87,7 +87,7 @@ const compressImage = (file) => {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 1000;
+        const MAX_WIDTH = 2500;
         const scaleSize = MAX_WIDTH / img.width;
         if (scaleSize < 1) {
             canvas.width = MAX_WIDTH;
@@ -98,7 +98,7 @@ const compressImage = (file) => {
         }
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.7));
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
       };
       img.onerror = (error) => reject(error);
     };
@@ -236,6 +236,32 @@ const App = () => {
       },
       (err) => {
         console.error('Gallery listener error:', err);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!db) return;
+    // Listen for logo changes
+    const unsubscribe = onSnapshot(
+      doc(db, 'artifacts', appId, 'public', 'data', 'logo', 'main'),
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const logoData = snapshot.data();
+          if (logoData?.logo) {
+            setContent(prev => ({
+              ...prev,
+              global: {
+                ...prev.global,
+                logo: logoData.logo
+              }
+            }));
+          }
+        }
+      },
+      (err) => {
+        console.error('Logo listener error:', err);
       }
     );
     return () => unsubscribe();

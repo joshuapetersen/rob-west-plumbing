@@ -22,13 +22,13 @@ const compressImage = (file) => {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 1000;
+        const MAX_WIDTH = 2500;
         const scaleSize = MAX_WIDTH / img.width;
         canvas.width = scaleSize < 1 ? MAX_WIDTH : img.width;
         canvas.height = scaleSize < 1 ? img.height * scaleSize : img.height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.7));
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
       };
       img.onerror = (error) => reject(error);
     };
@@ -118,7 +118,19 @@ const StaffDashboard = () => {
         const unsubGallery = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'gallery'), orderBy('createdAt', 'desc')), (s) => {
           setDynamicImages(s.docs.map(d => ({ id: d.id, ...d.data() })));
         });
-        return () => { unsubContent(); unsubGallery(); };
+        // Load logo
+        const unsubLogo = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'logo', 'main'), (s) => {
+          if (s.exists() && s.data()?.logo) {
+            setEditContent(prev => ({
+              ...prev,
+              global: {
+                ...prev.global,
+                logo: s.data().logo
+              }
+            }));
+          }
+        });
+        return () => { unsubContent(); unsubGallery(); unsubLogo(); };
       }
     });
     return () => unsubscribe();
@@ -162,6 +174,15 @@ const StaffDashboard = () => {
         community: editContent.community || {},
         about: editContent.about || {},
       });
+
+      // Separate logo from main doc to avoid 1MB limit
+      if (dataToSave.global?.logo) {
+        // Save logo separately
+        const logoRef = doc(db, 'artifacts', appId, 'public', 'data', 'logo', 'main');
+        await setDoc(logoRef, { logo: dataToSave.global.logo }, { merge: true });
+        // Remove logo from main doc
+        delete dataToSave.global.logo;
+      }
 
       console.log('Saving content:', dataToSave);
       console.log('User:', user.email);
