@@ -1,0 +1,21 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow public read access to site content
+    match /artifacts/{appId}/public/data/site_content/{document=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Allow public read access to gallery
+    match /artifacts/{appId}/public/data/gallery/{document=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Deny everything else by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
