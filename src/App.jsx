@@ -145,14 +145,23 @@ const App = () => {
     return () => unsubscribe();
   }, []);
 
-  // useEffect(() => {
-  //   const unsubscribe = onSnapshot(doc(db, 'content', appId), (doc) => {
-  //     if (doc.exists()) {
-  //       setContent(doc.data());
-  //     }
-  //   });
-  //   return () => unsubscribe();
-  // }, []);
+  useEffect(() => {
+    if (!db) return;
+    const { onSnapshot, doc } = require('firebase/firestore');
+    const unsubscribe = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'site_content', 'main'), (docSnap) => {
+      if (docSnap.exists()) {
+        const fetchedData = docSnap.data();
+        setContent({
+          ...DEFAULT_CONTENT,
+          ...fetchedData,
+          pages: fetchedData.pages || DEFAULT_CONTENT.pages,
+          global: { ...DEFAULT_CONTENT.global, ...(fetchedData.global || {}) },
+          about: { ...DEFAULT_CONTENT.about, ...(fetchedData.about || {}) },
+        });
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const renderPage = () => {
     const pageData = content.pages?.find(p => p.id === page);
