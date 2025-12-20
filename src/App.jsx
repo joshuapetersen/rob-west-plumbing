@@ -141,13 +141,9 @@ const App = () => {
     if (!auth) return;
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      if (!currentUser && (page === 'staff' || page === 'dashboard')) {
-        // Redirect to home if logged out and trying to access dashboard
-        setPage('home');
-      }
     });
     return () => unsubscribe();
-  }, [page]);
+  }, []);
 
   // useEffect(() => {
   //   const unsubscribe = onSnapshot(doc(db, 'content', appId), (doc) => {
