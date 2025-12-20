@@ -34,7 +34,7 @@ const DEFAULT_CONTENT = {
     { id: 'about', label: 'About', type: 'fixed', enabled: true, order: 3 },
   ],
   global: {
-    logo: "/IMG_20251219_082826329_HDR.jpg", // Ensure this file is in the 'public' folder
+    logo: "", // Logo loads from Firebase logo/main collection
     phone: "(773) 290-8232",
     address: "1102 N California Ave",
     hours: "7 AM - 7 PM",
@@ -181,15 +181,7 @@ const App = () => {
   const [reviews, setReviews] = useState([]);
   const [contentError, setContentError] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [page, setPage] = useState(() => {
-    // Load page from localStorage on initial load
-    return localStorage.getItem('currentPage') || 'home';
-  });
-
-  // Persist current page to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('currentPage', page);
-  }, [page]);
+  const [page, setPage] = useState('home');
 
   useEffect(() => {
     if (!auth) return;
@@ -299,6 +291,16 @@ const App = () => {
   };
 
   const renderPage = () => {
+    // If trying to access dashboard, check authentication
+    if (page === 'dashboard') {
+      if (!user) {
+        // Not authenticated - redirect to home
+        setPage('home');
+        return <Suspense fallback={<LoadingFallback />}><HomePage setPage={setPage} content={content} /></Suspense>;
+      }
+      return <Suspense fallback={<LoadingFallback />}><StaffDashboard onLogout={() => { auth.signOut(); setPage('home'); }} /></Suspense>;
+    }
+
     const pageData = content.pages?.find(p => p.id === page);
     if (pageData && pageData.type === 'custom') {
       return <Suspense fallback={<LoadingFallback />}><CustomPage content={content} pageData={pageData} /></Suspense>;
@@ -312,8 +314,6 @@ const App = () => {
         return <Suspense fallback={<LoadingFallback />}><CommunityPage content={content} dynamicImages={dynamicImages} /></Suspense>;
       case 'about':
         return <Suspense fallback={<LoadingFallback />}><AboutPage content={content} /></Suspense>;
-      case 'dashboard':
-        return <Suspense fallback={<LoadingFallback />}><StaffDashboard /></Suspense>;
       default:
         return <Suspense fallback={<LoadingFallback />}><HomePage setPage={setPage} content={content} /></Suspense>;
     }

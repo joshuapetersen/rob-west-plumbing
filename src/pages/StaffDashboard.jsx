@@ -65,7 +65,7 @@ const DEFAULT_CONTENT = {
   about: { title: "About Us", description: "Family-owned.", image: "", team: [] }
 };
 
-const StaffDashboard = () => {
+const StaffDashboard = ({ onLogout }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -479,7 +479,7 @@ const StaffDashboard = () => {
           </div>
           <div className="flex gap-2">
              <button onClick={triggerTestEmail} className="flex items-center gap-2 text-slate-500 font-bold hover:text-emerald-600 uppercase text-xs transition-colors py-3 px-6 rounded-xl bg-white border border-slate-200 shadow-sm"><Mail size={16} /> Test Email</button>
-             <button onClick={() => signOut(auth)} className="flex items-center gap-2 text-white font-bold hover:bg-red-600 uppercase text-xs transition-colors py-3 px-6 rounded-xl bg-red-500 shadow-lg shadow-red-200"><LogOut size={16} /> Logout</button>
+             <button onClick={() => { signOut(auth); if (onLogout) onLogout(); }} className="flex items-center gap-2 text-white font-bold hover:bg-red-600 uppercase text-xs transition-colors py-3 px-6 rounded-xl bg-red-500 shadow-lg shadow-red-200"><LogOut size={16} /> Logout</button>
           </div>
         </div>
 
