@@ -129,6 +129,7 @@ const App = () => {
   const [content, setContent] = useState(DEFAULT_CONTENT);
   const [user, setUser] = useState(null);
   const [dynamicImages, setDynamicImages] = useState([]);
+  const [contentError, setContentError] = useState('');
   const [page, setPage] = useState(() => {
     // Load page from localStorage on initial load
     return localStorage.getItem('currentPage') || 'home';
@@ -149,29 +150,43 @@ const App = () => {
 
   useEffect(() => {
     if (!db) return;
-    const unsubscribe = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'site_content', 'main'), (docSnap) => {
-      if (docSnap.exists()) {
-        const fetchedData = docSnap.data();
-        setContent({
-          ...DEFAULT_CONTENT,
-          ...fetchedData,
-          pages: fetchedData.pages || DEFAULT_CONTENT.pages,
-          global: { ...DEFAULT_CONTENT.global, ...(fetchedData.global || {}) },
-          home: { ...DEFAULT_CONTENT.home, ...(fetchedData.home || {}) },
-          services: { ...DEFAULT_CONTENT.services, ...(fetchedData.services || {}) },
-          community: { ...DEFAULT_CONTENT.community, ...(fetchedData.community || {}) },
-          about: { ...DEFAULT_CONTENT.about, ...(fetchedData.about || {}) },
-        });
+    const unsubscribe = onSnapshot(
+      doc(db, 'artifacts', appId, 'public', 'data', 'site_content', 'main'),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const fetchedData = docSnap.data();
+          setContent({
+            ...DEFAULT_CONTENT,
+            ...fetchedData,
+            pages: fetchedData.pages || DEFAULT_CONTENT.pages,
+            global: { ...DEFAULT_CONTENT.global, ...(fetchedData.global || {}) },
+            home: { ...DEFAULT_CONTENT.home, ...(fetchedData.home || {}) },
+            services: { ...DEFAULT_CONTENT.services, ...(fetchedData.services || {}) },
+            community: { ...DEFAULT_CONTENT.community, ...(fetchedData.community || {}) },
+            about: { ...DEFAULT_CONTENT.about, ...(fetchedData.about || {}) },
+          });
+          setContentError('');
+        }
+      },
+      (err) => {
+        console.error('Content listener error:', err);
+        setContentError(err.message || 'Failed to load content');
       }
-    });
+    );
     return () => unsubscribe();
   }, []);
 
   useEffect(() => {
     if (!db) return;
-    const unsubscribe = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'gallery'), orderBy('createdAt', 'desc')), (snapshot) => {
-      setDynamicImages(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'artifacts', appId, 'public', 'data', 'gallery'), orderBy('createdAt', 'desc')),
+      (snapshot) => {
+        setDynamicImages(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      },
+      (err) => {
+        console.error('Gallery listener error:', err);
+      }
+    );
     return () => unsubscribe();
   }, []);
 
@@ -198,6 +213,11 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      {contentError && (
+        <div className="bg-red-50 text-red-700 border border-red-100 px-4 py-3 text-sm font-semibold text-center">
+          Live content unavailable: {contentError}
+        </div>
+      )}
       {/* Top Bar */}
       <div className="bg-emerald-950 text-white py-2 px-4 text-xs font-medium border-b border-emerald-900 hidden md:block">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
