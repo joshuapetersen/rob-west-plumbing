@@ -233,6 +233,35 @@ const StaffDashboard = () => {
     } catch { setError("Image error"); }
   };
 
+  // Add image to section's images array
+  const addSectionImage = async (section, file) => {
+    if (!file) return;
+    try {
+      const compressed = await compressImage(file);
+      const currentImages = editContent[section]?.images || [];
+      setEditContent(prev => ({ 
+        ...prev, 
+        [section]: { 
+          ...prev[section], 
+          images: [...currentImages, compressed] 
+        } 
+      }));
+    } catch { setError("Image error"); }
+  };
+
+  // Remove image from section's images array
+  const removeSectionImage = (section, index) => {
+    const currentImages = [...(editContent[section]?.images || [])];
+    currentImages.splice(index, 1);
+    setEditContent(prev => ({ 
+      ...prev, 
+      [section]: { 
+        ...prev[section], 
+        images: currentImages 
+      } 
+    }));
+  };
+
   // 7. Page Logic
 
   // Toggle visibility of a page by id
@@ -452,10 +481,28 @@ const StaffDashboard = () => {
                            <textarea rows={4} value={editContent.home?.heroSubtitle || ''} onChange={(e) => setEditContent({...editContent, home: {...editContent.home, heroSubtitle: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold text-sm text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
                         </div>
                      </div>
-                     <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 border-dashed text-center">
-                        <p className="text-xs font-black text-slate-400 uppercase mb-4">Hero Background Image</p>
-                        <img src={editContent.home?.heroImage} className="w-full h-32 object-cover rounded-xl mb-4 shadow-sm" />
-                        <input type="file" accept="image/*" onChange={(e) => handleContentImageUpload('home', 'heroImage', e.target.files[0])} className="text-xs" />
+                     <div className="space-y-4">
+                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 border-dashed text-center">
+                           <p className="text-xs font-black text-slate-400 uppercase mb-4">Hero Background Image</p>
+                           <img src={editContent.home?.heroImage} className="w-full h-32 object-cover rounded-xl mb-4 shadow-sm" />
+                           <input type="file" accept="image/*" onChange={(e) => handleContentImageUpload('home', 'heroImage', e.target.files[0])} className="text-xs" />
+                        </div>
+                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                           <p className="text-xs font-black text-slate-400 uppercase mb-4">Additional Images</p>
+                           <div className="grid grid-cols-2 gap-3 mb-4">
+                              {(editContent.home?.images || []).map((img, idx) => (
+                                <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden">
+                                  <img src={img} className="w-full h-full object-cover" />
+                                  <button onClick={() => removeSectionImage('home', idx)} className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14} /></button>
+                                </div>
+                              ))}
+                           </div>
+                           <label className="block w-full cursor-pointer bg-emerald-50 border-2 border-dashed border-emerald-200 rounded-xl p-4 hover:bg-emerald-100 transition-colors text-center">
+                              <Plus className="mx-auto mb-2 text-emerald-600" size={24} />
+                              <span className="text-emerald-600 font-bold text-xs uppercase">Add Image</span>
+                              <input type="file" accept="image/*" className="hidden" onChange={(e) => addSectionImage('home', e.target.files[0])} />
+                           </label>
+                        </div>
                      </div>
                   </div>
                </div>
@@ -479,10 +526,28 @@ const StaffDashboard = () => {
                            <textarea rows={3} value={editContent.services?.description || ''} onChange={(e) => setEditContent({...editContent, services: {...editContent.services, description: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-medium text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
                         </div>
                      </div>
-                     <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 border-dashed text-center">
-                        <p className="text-xs font-black text-slate-400 uppercase mb-4">Services Page Image</p>
-                        <img src={editContent.services?.image} className="w-full h-32 object-cover rounded-xl mb-4 shadow-sm" />
-                        <input type="file" accept="image/*" onChange={(e) => handleContentImageUpload('services', 'image', e.target.files[0])} className="text-xs" />
+                     <div className="space-y-4">
+                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 border-dashed text-center">
+                           <p className="text-xs font-black text-slate-400 uppercase mb-4">Services Header Image</p>
+                           <img src={editContent.services?.image} className="w-full h-32 object-cover rounded-xl mb-4 shadow-sm" />
+                           <input type="file" accept="image/*" onChange={(e) => handleContentImageUpload('services', 'image', e.target.files[0])} className="text-xs" />
+                        </div>
+                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                           <p className="text-xs font-black text-slate-400 uppercase mb-4">Additional Images</p>
+                           <div className="grid grid-cols-2 gap-3 mb-4">
+                              {(editContent.services?.images || []).map((img, idx) => (
+                                <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden">
+                                  <img src={img} className="w-full h-full object-cover" />
+                                  <button onClick={() => removeSectionImage('services', idx)} className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14} /></button>
+                                </div>
+                              ))}
+                           </div>
+                           <label className="block w-full cursor-pointer bg-emerald-50 border-2 border-dashed border-emerald-200 rounded-xl p-4 hover:bg-emerald-100 transition-colors text-center">
+                              <Plus className="mx-auto mb-2 text-emerald-600" size={24} />
+                              <span className="text-emerald-600 font-bold text-xs uppercase">Add Image</span>
+                              <input type="file" accept="image/*" className="hidden" onChange={(e) => addSectionImage('services', e.target.files[0])} />
+                           </label>
+                        </div>
                      </div>
                   </div>
                </div>
@@ -506,10 +571,28 @@ const StaffDashboard = () => {
                            <textarea rows={3} value={editContent.community?.description || ''} onChange={(e) => setEditContent({...editContent, community: {...editContent.community, description: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-medium text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
                         </div>
                      </div>
-                     <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 border-dashed text-center">
-                        <p className="text-xs font-black text-slate-400 uppercase mb-4">Community Page Image</p>
-                        <img src={editContent.community?.image} className="w-full h-32 object-cover rounded-xl mb-4 shadow-sm" />
-                        <input type="file" accept="image/*" onChange={(e) => handleContentImageUpload('community', 'image', e.target.files[0])} className="text-xs" />
+                     <div className="space-y-4">
+                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 border-dashed text-center">
+                           <p className="text-xs font-black text-slate-400 uppercase mb-4">Community Header Image</p>
+                           <img src={editContent.community?.image} className="w-full h-32 object-cover rounded-xl mb-4 shadow-sm" />
+                           <input type="file" accept="image/*" onChange={(e) => handleContentImageUpload('community', 'image', e.target.files[0])} className="text-xs" />
+                        </div>
+                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                           <p className="text-xs font-black text-slate-400 uppercase mb-4">Additional Images</p>
+                           <div className="grid grid-cols-2 gap-3 mb-4">
+                              {(editContent.community?.images || []).map((img, idx) => (
+                                <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden">
+                                  <img src={img} className="w-full h-full object-cover" />
+                                  <button onClick={() => removeSectionImage('community', idx)} className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14} /></button>
+                                </div>
+                              ))}
+                           </div>
+                           <label className="block w-full cursor-pointer bg-emerald-50 border-2 border-dashed border-emerald-200 rounded-xl p-4 hover:bg-emerald-100 transition-colors text-center">
+                              <Plus className="mx-auto mb-2 text-emerald-600" size={24} />
+                              <span className="text-emerald-600 font-bold text-xs uppercase">Add Image</span>
+                              <input type="file" accept="image/*" className="hidden" onChange={(e) => addSectionImage('community', e.target.files[0])} />
+                           </label>
+                        </div>
                      </div>
                   </div>
                </div>
@@ -522,19 +605,39 @@ const StaffDashboard = () => {
                       {loading ? <Loader2 className="animate-spin" size={14} /> : <><Save size={14} /> Save</>}
                     </button>
                   </div>
-                  <div className="space-y-4">
-                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">About Title</label>
-                        <input type="text" value={editContent.about?.title || ''} onChange={(e) => setEditContent({...editContent, about: {...editContent.about, title: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <div className="grid md:grid-cols-2 gap-8">
+                     <div className="space-y-4">
+                        <div className="space-y-2">
+                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">About Title</label>
+                           <input type="text" value={editContent.about?.title || ''} onChange={(e) => setEditContent({...editContent, about: {...editContent.about, title: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500" />
+                        </div>
+                        <div className="space-y-2">
+                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">About Description</label>
+                           <textarea rows={5} value={editContent.about?.description || ''} onChange={(e) => setEditContent({...editContent, about: {...editContent.about, description: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-medium text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
+                        </div>
                      </div>
-                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">About Description</label>
-                        <textarea rows={5} value={editContent.about?.description || ''} onChange={(e) => setEditContent({...editContent, about: {...editContent.about, description: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-medium text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
-                     </div>
-                     <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 border-dashed text-center">
-                        <p className="text-xs font-black text-slate-400 uppercase mb-4">About Page Image</p>
-                        <img src={editContent.about?.image} className="w-full h-32 object-cover rounded-xl mb-4 shadow-sm" />
-                        <input type="file" accept="image/*" onChange={(e) => handleContentImageUpload('about', 'image', e.target.files[0])} className="text-xs" />
+                     <div className="space-y-4">
+                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 border-dashed text-center">
+                           <p className="text-xs font-black text-slate-400 uppercase mb-4">About Header Image</p>
+                           <img src={editContent.about?.image} className="w-full h-32 object-cover rounded-xl mb-4 shadow-sm" />
+                           <input type="file" accept="image/*" onChange={(e) => handleContentImageUpload('about', 'image', e.target.files[0])} className="text-xs" />
+                        </div>
+                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                           <p className="text-xs font-black text-slate-400 uppercase mb-4">Additional Images</p>
+                           <div className="grid grid-cols-2 gap-3 mb-4">
+                              {(editContent.about?.images || []).map((img, idx) => (
+                                <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden">
+                                  <img src={img} className="w-full h-full object-cover" />
+                                  <button onClick={() => removeSectionImage('about', idx)} className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14} /></button>
+                                </div>
+                              ))}
+                           </div>
+                           <label className="block w-full cursor-pointer bg-emerald-50 border-2 border-dashed border-emerald-200 rounded-xl p-4 hover:bg-emerald-100 transition-colors text-center">
+                              <Plus className="mx-auto mb-2 text-emerald-600" size={24} />
+                              <span className="text-emerald-600 font-bold text-xs uppercase">Add Image</span>
+                              <input type="file" accept="image/*" className="hidden" onChange={(e) => addSectionImage('about', e.target.files[0])} />
+                           </label>
+                        </div>
                      </div>
                   </div>
                </div>
