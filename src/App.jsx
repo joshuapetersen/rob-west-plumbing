@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, signInAnonymously } from 'firebase/auth';
-import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, deleteDoc, orderBy } from 'firebase/firestore';
+import { auth, db, appId } from './firebase.js';
+import { onAuthStateChanged } from 'firebase/auth';
 import { 
   Phone, Mail, MapPin, Clock, Droplets, Leaf, ShieldCheck, Star, 
   Menu, X, ArrowRight, Instagram, Facebook, Youtube, CheckCircle2, 
@@ -18,29 +17,12 @@ const AboutPage = lazy(() => import('./pages/AboutPage'));
 const CustomPage = lazy(() => import('./pages/CustomPage'));
 const MobileMenu = lazy(() => import('./pages/MobileMenu'));
 const FooterReviewFormLazy = lazy(() => import('./pages/FooterReviewForm'));
-const StaffPortal = lazy(() => import('./StaffPortal'));
+const StaffDashboard = lazy(() => import('./pages/StaffDashboard'));
 const GeminiAssistant = lazy(() => import('./components/GeminiAssistant'));
-
-// --- CONFIGURATION ---
-
-const firebaseConfig = {
-  apiKey: "AIzaSyA6Bn-r5R_m7ZyUQHjC5dnwAX_KcmKtYCw",
-  authDomain: "robwestplumbing-2eb06.firebaseapp.com",
-  projectId: "robwestplumbing-2eb06",
-  storageBucket: "robwestplumbing-2eb06.firebasestorage.app",
-  messagingSenderId: "1016017584876",
-  appId: "1:1016017584876:web:2de84f833e7747ef459bc9",
-  measurementId: "G-11YJK1JPV7"
-};
 
 // Use environment variable for Gemini, or fallback to empty string to prevent crash if missing
 // If you have a VITE_GEMINI_API_KEY in your .env file, it will use that.
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || ""; 
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = 'rob-west-plumbing-main';
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
 
 // --- DEFAULT CONTENT (Fallback / Initial State) ---
 const DEFAULT_CONTENT = {
@@ -56,6 +38,8 @@ const DEFAULT_CONTENT = {
     address: "1102 N California Ave",
     hours: "7 AM - 7 PM",
     license: "License #055-037380",
+    email: "info@robwestplumbing.com",
+    tagline: "Family-owned, licensed, bonded, and insured plumbing company serving Chicago for over 20 years.",
     social: {
       facebook: "https://facebook.com",
       instagram: "https://instagram.com",
@@ -143,32 +127,44 @@ const RobWestLogo = ({ className = "h-16 w-auto", logoUrl }) => {
 const App = () => {
   const [content, setContent] = useState(DEFAULT_CONTENT);
   const [user, setUser] = useState(null);
-  const [page, setPage] = useState('home');
-  const [dynamicImages, setDynamicImages] = useState([]);
+  const [page, setPage] = useState(() => {
+    // Load page from localStorage on initial load
+    return localStorage.getItem('currentPage') || 'home';
+  });
+
+  // Persist current page to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('currentPage', page);
+  }, [page]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, setUser);
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    const unsubscribe = onSnapshot(doc(db, 'content', appId), (doc) => {
-      if (doc.exists()) {
-        setContent(doc.data());
+    if (!auth) return;
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      if (!currentUser) {
+        // Redirect to home if logged out
+        setPage('home');
       }
     });
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'gallery'), (snapshot) => {
-      const images = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setDynamicImages(images);
-    });
-    return () => unsubscribe();
-  }, []);
+  // useEffect(() => {
+  //   const unsubscribe = onSnapshot(doc(db, 'content', appId), (doc) => {
+  //     if (doc.exists()) {
+  //       setContent(doc.data());
+  //     }
+  //   });
+  //   return () => unsubscribe();
+  // }, []);
 
   const renderPage = () => {
+    // Prevent access to staff dashboard if not logged in
+    if (page === 'staff' && !user) {
+      setPage('home');
+      return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><HomePage setPage={setPage} content={content} /></Suspense>;
+    }
+    
     const pageData = content.pages?.find(p => p.id === page);
     if (pageData && pageData.type === 'custom') {
       return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><CustomPage content={content} pageData={pageData} /></Suspense>;
@@ -182,6 +178,8 @@ const App = () => {
         return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><CommunityPage content={content} /></Suspense>;
       case 'about':
         return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><AboutPage content={content} /></Suspense>;
+      case 'dashboard':
+        return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><StaffDashboard /></Suspense>;
       default:
         return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><HomePage setPage={setPage} content={content} /></Suspense>;
     }
@@ -189,6 +187,20 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Top Bar */}
+      <div className="bg-emerald-950 text-white py-2 px-4 text-xs font-medium border-b border-emerald-900 hidden md:block">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex gap-6 items-center">
+            <span className="flex items-center gap-1.5"><MapPin size={12} className="text-emerald-400" /> {content.global.address}</span>
+            <span className="flex items-center gap-1.5"><Clock size={12} className="text-emerald-400" /> {content.global.hours}</span>
+          </div>
+          <div className="flex items-center gap-6">
+            <button onClick={() => { console.log('[App] Staff Portal tab clicked'); setPage('staff'); }} className="hover:text-emerald-400 flex items-center gap-1 transition-colors"><Lock size={12} /> Staff Portal</button>
+            <a href={`tel:${content.global.phone.replace(/\D/g,'')}`} className="hover:text-emerald-300 font-bold">{content.global.phone}</a>
+          </div>
+        </div>
+      </div>
+
       {/* Navigation */}
       <nav className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -198,21 +210,18 @@ const App = () => {
             </div>
             <div className="hidden md:flex space-x-8">
               {content.pages?.filter(p => p.enabled).map(p => (
-                <button key={p.id} onClick={() => setPage(p.id)} className={`px-3 py-2 text-sm font-medium transition-colors ${page === p.id ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-slate-600 hover:text-emerald-600'}`}>
+                <button key={p.id} onClick={() => { console.log('[App] Nav tab clicked:', p.id); setPage(p.id); }} className={`px-3 py-2 text-sm font-medium transition-colors ${page === p.id ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-slate-600 hover:text-emerald-600'}`}>
                   {p.label}
                 </button>
               ))}
-            </div>
-            <div className="md:hidden">
-              <Suspense fallback={<div></div>}><MobileMenu page={page} setPage={setPage} /></Suspense>
             </div>
           </div>
         </div>
       </nav>
 
       {/* Main Content */}
-      <main>
-        {page === 'staff' ? <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><StaffPortal dynamicImages={dynamicImages} content={content} /></Suspense> : renderPage()}
+      <main className="w-full">
+        {page === 'staff' ? <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><StaffDashboard /></Suspense> : renderPage()}
       </main>
 
       {/* Footer */}
@@ -245,11 +254,12 @@ const App = () => {
               <div className="flex gap-4">
                 {content.global?.social?.facebook && <a href={content.global.social.facebook} className="text-slate-300 hover:text-white transition-colors"><Facebook size={20} /></a>}
                 {content.global?.social?.instagram && <a href={content.global.social.instagram} className="text-slate-300 hover:text-white transition-colors"><Instagram size={20} /></a>}
+                {content.global?.social?.youtube && <a href={content.global.social.youtube} className="text-slate-300 hover:text-white transition-colors"><Youtube size={20} /></a>}
               </div>
             </div>
           </div>
           <div className="border-t border-slate-800 mt-8 pt-8 text-center">
-            <Suspense fallback={<div></div>}><FooterReviewFormLazy onSubmit={(review) => addDoc(collection(db, 'reviews'), review)} content={content} reviews={[]} /></Suspense>
+            <Suspense fallback={<div></div>}><FooterReviewFormLazy onSubmit={(review) => console.log('Review submitted:', review)} content={content} reviews={[]} /></Suspense>
           </div>
         </div>
       </footer>
@@ -261,5 +271,3 @@ const App = () => {
 };
 
 export default App;
-
-// --- PAGES & SECTIONS ---
