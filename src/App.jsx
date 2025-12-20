@@ -180,6 +180,7 @@ const App = () => {
   const [dynamicImages, setDynamicImages] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [contentError, setContentError] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [page, setPage] = useState(() => {
     // Load page from localStorage on initial load
     return localStorage.getItem('currentPage') || 'home';
@@ -327,9 +328,20 @@ const App = () => {
                 </button>
               ))}
             </div>
+            {/* Mobile Menu Button */}
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-slate-600 hover:text-emerald-600">
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
         </div>
       </nav>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <Suspense fallback={<div></div>}>
+          <MobileMenu isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} setPage={(pageId) => { setPage(pageId); setMobileMenuOpen(false); }} content={content} />
+        </Suspense>
+      )}
 
       {/* Main Content */}
       <main className="w-full">
