@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { auth, db, appId } from './firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
+import { onSnapshot, doc } from 'firebase/firestore';
 import { 
   Phone, Mail, MapPin, Clock, Droplets, Leaf, ShieldCheck, Star, 
   Menu, X, ArrowRight, Instagram, Facebook, Youtube, CheckCircle2, 
@@ -147,7 +148,6 @@ const App = () => {
 
   useEffect(() => {
     if (!db) return;
-    const { onSnapshot, doc } = require('firebase/firestore');
     const unsubscribe = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'site_content', 'main'), (docSnap) => {
       if (docSnap.exists()) {
         const fetchedData = docSnap.data();

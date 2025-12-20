@@ -396,7 +396,12 @@ const StaffDashboard = () => {
              <div className="space-y-12">
                {/* Global Section */}
                <div className="space-y-6">
-                 <h4 className="font-black text-slate-300 uppercase text-xs tracking-widest border-b border-slate-50 pb-2">Global Settings</h4>
+                 <div className="flex justify-between items-center">
+                   <h4 className="font-black text-slate-300 uppercase text-xs tracking-widest border-b border-slate-50 pb-2 flex-1">Global Settings</h4>
+                   <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-6 py-2 rounded-xl font-bold uppercase text-[10px] hover:bg-emerald-700 flex items-center gap-2 shadow-md transition-all disabled:opacity-50">
+                     {loading ? <Loader2 className="animate-spin" size={14} /> : <><Save size={14} /> Save</>}
+                   </button>
+                 </div>
                  <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Phone Number</label>
@@ -430,7 +435,12 @@ const StaffDashboard = () => {
 
                {/* Home Section */}
                <div id="content-section-home" className="space-y-6 pt-8 border-t border-slate-50">
-                  <h4 className="font-black text-slate-300 uppercase text-xs tracking-widest border-b border-slate-50 pb-2">Home Page</h4>
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-black text-slate-300 uppercase text-xs tracking-widest border-b border-slate-50 pb-2 flex-1">Home Page</h4>
+                    <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-6 py-2 rounded-xl font-bold uppercase text-[10px] hover:bg-emerald-700 flex items-center gap-2 shadow-md transition-all disabled:opacity-50">
+                      {loading ? <Loader2 className="animate-spin" size={14} /> : <><Save size={14} /> Save</>}
+                    </button>
+                  </div>
                   <div className="grid md:grid-cols-2 gap-8">
                      <div className="space-y-4">
                         <div className="space-y-2">
@@ -452,7 +462,12 @@ const StaffDashboard = () => {
 
                {/* Services Section */}
               <div id="content-section-services" className="space-y-6 pt-8 border-t border-slate-50">
-                  <h4 className="font-black text-slate-300 uppercase text-xs tracking-widest border-b border-slate-50 pb-2">Services Page</h4>
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-black text-slate-300 uppercase text-xs tracking-widest border-b border-slate-50 pb-2 flex-1">Services Page</h4>
+                    <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-6 py-2 rounded-xl font-bold uppercase text-[10px] hover:bg-emerald-700 flex items-center gap-2 shadow-md transition-all disabled:opacity-50">
+                      {loading ? <Loader2 className="animate-spin" size={14} /> : <><Save size={14} /> Save</>}
+                    </button>
+                  </div>
                   <div className="grid md:grid-cols-2 gap-8">
                      <div className="space-y-4">
                         <div className="space-y-2">
@@ -474,7 +489,12 @@ const StaffDashboard = () => {
 
                {/* Community Section */}
               <div id="content-section-community" className="space-y-6 pt-8 border-t border-slate-50">
-                  <h4 className="font-black text-slate-300 uppercase text-xs tracking-widest border-b border-slate-50 pb-2">Community Page</h4>
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-black text-slate-300 uppercase text-xs tracking-widest border-b border-slate-50 pb-2 flex-1">Community Page</h4>
+                    <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-6 py-2 rounded-xl font-bold uppercase text-[10px] hover:bg-emerald-700 flex items-center gap-2 shadow-md transition-all disabled:opacity-50">
+                      {loading ? <Loader2 className="animate-spin" size={14} /> : <><Save size={14} /> Save</>}
+                    </button>
+                  </div>
                   <div className="grid md:grid-cols-2 gap-8">
                      <div className="space-y-4">
                         <div className="space-y-2">
@@ -496,7 +516,12 @@ const StaffDashboard = () => {
 
                {/* About Section */}
               <div id="content-section-about" className="space-y-6 pt-8 border-t border-slate-50">
-                  <h4 className="font-black text-slate-300 uppercase text-xs tracking-widest border-b border-slate-50 pb-2">About Page</h4>
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-black text-slate-300 uppercase text-xs tracking-widest border-b border-slate-50 pb-2 flex-1">About Page</h4>
+                    <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-6 py-2 rounded-xl font-bold uppercase text-[10px] hover:bg-emerald-700 flex items-center gap-2 shadow-md transition-all disabled:opacity-50">
+                      {loading ? <Loader2 className="animate-spin" size={14} /> : <><Save size={14} /> Save</>}
+                    </button>
+                  </div>
                   <div className="space-y-4">
                      <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">About Title</label>
