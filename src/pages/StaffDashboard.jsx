@@ -449,6 +449,26 @@ const StaffDashboard = () => {
                      </div>
                   </div>
                </div>
+
+               {/* About Section */}
+              <div id="content-section-about" className="space-y-6 pt-8 border-t border-slate-50">
+                  <h4 className="font-black text-slate-300 uppercase text-xs tracking-widest border-b border-slate-50 pb-2">About Page</h4>
+                  <div className="space-y-4">
+                     <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">About Title</label>
+                        <input type="text" value={editContent.about?.title || ''} onChange={(e) => setEditContent({...editContent, about: {...editContent.about, title: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500" />
+                     </div>
+                     <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">About Description</label>
+                        <textarea rows={5} value={editContent.about?.description || ''} onChange={(e) => setEditContent({...editContent, about: {...editContent.about, description: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-medium text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
+                     </div>
+                     <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 border-dashed text-center">
+                        <p className="text-xs font-black text-slate-400 uppercase mb-4">About Page Image</p>
+                        <img src={editContent.about?.image} className="w-full h-32 object-cover rounded-xl mb-4 shadow-sm" />
+                        <input type="file" accept="image/*" onChange={(e) => handleContentImageUpload('about', 'image', e.target.files[0])} className="text-xs" />
+                     </div>
+                  </div>
+               </div>
              </div>
            )}
 
