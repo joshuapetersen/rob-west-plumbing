@@ -159,12 +159,12 @@ const App = () => {
   // }, []);
 
   const renderPage = () => {
-    // Prevent access to staff dashboard if not logged in
-    if (page === 'staff' && !user) {
+    // Normalize legacy 'staff' to 'dashboard' and block when unauthenticated
+    if ((page === 'staff' || page === 'dashboard') && !user) {
       setPage('home');
       return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><HomePage setPage={setPage} content={content} /></Suspense>;
     }
-    
+
     const pageData = content.pages?.find(p => p.id === page);
     if (pageData && pageData.type === 'custom') {
       return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><CustomPage content={content} pageData={pageData} /></Suspense>;
@@ -195,7 +195,7 @@ const App = () => {
             <span className="flex items-center gap-1.5"><Clock size={12} className="text-emerald-400" /> {content.global.hours}</span>
           </div>
           <div className="flex items-center gap-6">
-            <button onClick={() => { console.log('[App] Staff Portal tab clicked'); setPage('staff'); }} className="hover:text-emerald-400 flex items-center gap-1 transition-colors"><Lock size={12} /> Staff Portal</button>
+            <button onClick={() => { console.log('[App] Staff Portal tab clicked'); setPage('dashboard'); }} className="hover:text-emerald-400 flex items-center gap-1 transition-colors"><Lock size={12} /> Staff Portal</button>
             <a href={`tel:${content.global.phone.replace(/\D/g,'')}`} className="hover:text-emerald-300 font-bold">{content.global.phone}</a>
           </div>
         </div>
@@ -221,7 +221,7 @@ const App = () => {
 
       {/* Main Content */}
       <main className="w-full">
-        {page === 'staff' ? <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><StaffDashboard /></Suspense> : renderPage()}
+        {renderPage()}
       </main>
 
       {/* Footer */}
