@@ -77,6 +77,7 @@ const StaffDashboard = () => {
   const [editContent, setEditContent] = useState(DEFAULT_CONTENT);
   const [dynamicImages, setDynamicImages] = useState([]);
   const [fileData, setFileData] = useState(null);
+  const [galleryDescription, setGalleryDescription] = useState('');
   const [success, setSuccess] = useState(false);
 
   // Strip large image arrays before saving to keep document under 1MB
@@ -200,10 +201,12 @@ const StaffDashboard = () => {
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'gallery'), {
         url: fileData,
         createdAt: new Date().toISOString(),
-        uploadedBy: user.email
+        uploadedBy: user.email,
+        description: galleryDescription || ''
       });
       setSuccess(true);
       setFileData(null);
+      setGalleryDescription('');
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) { setError('Upload Failed'); } 
     finally { setLoading(false); }
@@ -531,99 +534,61 @@ const StaffDashboard = () => {
                  </div>
                </div>
 
-               {/* Home Section */}
-               <div id="content-section-home" className="space-y-6 pt-8 border-t border-slate-50">
-                  <div className="flex justify-between items-center">
-                    <h4 className="font-black text-slate-300 uppercase text-xs tracking-widest border-b border-slate-50 pb-2 flex-1">Home Page</h4>
+              {/* Home Section (text only) */}
+              <div id="content-section-home" className="space-y-6 pt-8 border-t border-slate-50">
+                <div className="flex justify-between items-center">
+                  <h4 className="font-black text-slate-300 uppercase text-xs tracking-widest border-b border-slate-50 pb-2 flex-1">Home Page</h4>
+                </div>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Hero Headline</label>
+                    <textarea rows={3} value={editContent.home?.heroTitle || ''} onChange={(e) => setEditContent({...editContent, home: {...editContent.home, heroTitle: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-black text-xl text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
                   </div>
-                  <div className="grid md:grid-cols-2 gap-8">
-                     <div className="space-y-4">
-                        <div className="space-y-2">
-                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Hero Headline</label>
-                           <textarea rows={3} value={editContent.home?.heroTitle || ''} onChange={(e) => setEditContent({...editContent, home: {...editContent.home, heroTitle: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-black text-xl text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
-                        </div>
-                        <div className="space-y-2">
-                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Hero Subtext</label>
-                           <textarea rows={4} value={editContent.home?.heroSubtitle || ''} onChange={(e) => setEditContent({...editContent, home: {...editContent.home, heroSubtitle: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold text-sm text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
-                        </div>
-                     </div>
-                     <div className="space-y-4">
-                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 border-dashed text-center">
-                           <p className="text-xs font-black text-slate-400 uppercase mb-4">Hero Background Image</p>
-                           <img src={editContent.home?.heroImage} className="w-full h-32 object-cover rounded-xl mb-4 shadow-sm" />
-                           <input type="file" accept="image/*" onChange={(e) => handleContentImageUpload('home', 'heroImage', e.target.files[0])} className="text-xs" />
-                        </div>
-                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200">
-                           <p className="text-xs font-black text-slate-400 uppercase mb-4">Additional Images</p>
-                           <div className="grid grid-cols-2 gap-3 mb-4">
-                              {(editContent.home?.images || []).map((img, idx) => (
-                                <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden">
-                                  <img src={img} className="w-full h-full object-cover" />
-                                  <button onClick={() => removeSectionImage('home', idx)} className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14} /></button>
-                                </div>
-                              ))}
-                           </div>
-                           <label className="block w-full cursor-pointer bg-emerald-50 border-2 border-dashed border-emerald-200 rounded-xl p-4 hover:bg-emerald-100 transition-colors text-center">
-                              <Plus className="mx-auto mb-2 text-emerald-600" size={24} />
-                              <span className="text-emerald-600 font-bold text-xs uppercase">Add Image</span>
-                              <input type="file" accept="image/*" className="hidden" onChange={(e) => addSectionImage('home', e.target.files[0])} />
-                           </label>
-                        </div>
-                     </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Hero Subtext</label>
+                    <textarea rows={4} value={editContent.home?.heroSubtitle || ''} onChange={(e) => setEditContent({...editContent, home: {...editContent.home, heroSubtitle: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold text-sm text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
                   </div>
-                  <div className="flex justify-end pt-6 border-t border-slate-50">
-                    <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold uppercase text-xs hover:bg-emerald-700 flex items-center gap-2 shadow-md transition-all disabled:opacity-50">
-                      {loading ? <Loader2 className="animate-spin" size={16} /> : <><Save size={16} /> Save Changes</>}
-                    </button>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Promo Text</label>
+                    <input type="text" value={editContent.home?.promoText || ''} onChange={(e) => setEditContent({...editContent, home: {...editContent.home, promoText: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500" />
                   </div>
-               </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Promo Link Text</label>
+                    <input type="text" value={editContent.home?.promoLinkText || ''} onChange={(e) => setEditContent({...editContent, home: {...editContent.home, promoLinkText: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Promo Link URL</label>
+                    <input type="text" value={editContent.home?.promoLinkUrl || ''} onChange={(e) => setEditContent({...editContent, home: {...editContent.home, promoLinkUrl: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500" />
+                  </div>
+                </div>
+                <div className="flex justify-end pt-6 border-t border-slate-50">
+                  <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold uppercase text-xs hover:bg-emerald-700 flex items-center gap-2 shadow-md transition-all disabled:opacity-50">
+                   {loading ? <Loader2 className="animate-spin" size={16} /> : <><Save size={16} /> Save Changes</>}
+                  </button>
+                </div>
+              </div>
 
                {/* Services Section */}
-              <div id="content-section-services" className="space-y-6 pt-8 border-t border-slate-50">
+                <div id="content-section-services" className="space-y-6 pt-8 border-t border-slate-50">
                   <div className="flex justify-between items-center">
                     <h4 className="font-black text-slate-300 uppercase text-xs tracking-widest border-b border-slate-50 pb-2 flex-1">Services Page</h4>
                   </div>
-                  <div className="grid md:grid-cols-2 gap-8">
-                     <div className="space-y-4">
-                        <div className="space-y-2">
-                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Services Title</label>
-                           <input type="text" value={editContent.services?.title || ''} onChange={(e) => setEditContent({...editContent, services: {...editContent.services, title: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500" />
-                        </div>
-                        <div className="space-y-2">
-                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Services Description</label>
-                           <textarea rows={3} value={editContent.services?.description || ''} onChange={(e) => setEditContent({...editContent, services: {...editContent.services, description: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-medium text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
-                        </div>
-                     </div>
-                     <div className="space-y-4">
-                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 border-dashed text-center">
-                           <p className="text-xs font-black text-slate-400 uppercase mb-4">Services Header Image</p>
-                           <img src={editContent.services?.image} className="w-full h-32 object-cover rounded-xl mb-4 shadow-sm" />
-                           <input type="file" accept="image/*" onChange={(e) => handleContentImageUpload('services', 'image', e.target.files[0])} className="text-xs" />
-                        </div>
-                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200">
-                           <p className="text-xs font-black text-slate-400 uppercase mb-4">Additional Images</p>
-                           <div className="grid grid-cols-2 gap-3 mb-4">
-                              {(editContent.services?.images || []).map((img, idx) => (
-                                <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden">
-                                  <img src={img} className="w-full h-full object-cover" />
-                                  <button onClick={() => removeSectionImage('services', idx)} className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14} /></button>
-                                </div>
-                              ))}
-                           </div>
-                           <label className="block w-full cursor-pointer bg-emerald-50 border-2 border-dashed border-emerald-200 rounded-xl p-4 hover:bg-emerald-100 transition-colors text-center">
-                              <Plus className="mx-auto mb-2 text-emerald-600" size={24} />
-                              <span className="text-emerald-600 font-bold text-xs uppercase">Add Image</span>
-                              <input type="file" accept="image/*" className="hidden" onChange={(e) => addSectionImage('services', e.target.files[0])} />
-                           </label>
-                        </div>
-                     </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Services Title</label>
+                      <input type="text" value={editContent.services?.title || ''} onChange={(e) => setEditContent({...editContent, services: {...editContent.services, title: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Services Description</label>
+                      <textarea rows={3} value={editContent.services?.description || ''} onChange={(e) => setEditContent({...editContent, services: {...editContent.services, description: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-medium text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
+                    </div>
                   </div>
                   <div className="flex justify-end pt-6 border-t border-slate-50">
                     <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold uppercase text-xs hover:bg-emerald-700 flex items-center gap-2 shadow-md transition-all disabled:opacity-50">
-                      {loading ? <Loader2 className="animate-spin" size={16} /> : <><Save size={16} /> Save Changes</>}
+                     {loading ? <Loader2 className="animate-spin" size={16} /> : <><Save size={16} /> Save Changes</>}
                     </button>
                   </div>
-               </div>
+                </div>
 
                {/* Community Section */}
               <div id="content-section-community" className="space-y-6 pt-8 border-t border-slate-50">
@@ -673,51 +638,26 @@ const StaffDashboard = () => {
                </div>
 
                {/* About Section */}
-              <div id="content-section-about" className="space-y-6 pt-8 border-t border-slate-50">
+                <div id="content-section-about" className="space-y-6 pt-8 border-t border-slate-50">
                   <div className="flex justify-between items-center">
                     <h4 className="font-black text-slate-300 uppercase text-xs tracking-widest border-b border-slate-50 pb-2 flex-1">About Page</h4>
                   </div>
-                  <div className="grid md:grid-cols-2 gap-8">
-                     <div className="space-y-4">
-                        <div className="space-y-2">
-                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">About Title</label>
-                           <input type="text" value={editContent.about?.title || ''} onChange={(e) => setEditContent({...editContent, about: {...editContent.about, title: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500" />
-                        </div>
-                        <div className="space-y-2">
-                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">About Description</label>
-                           <textarea rows={5} value={editContent.about?.description || ''} onChange={(e) => setEditContent({...editContent, about: {...editContent.about, description: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-medium text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
-                        </div>
-                     </div>
-                     <div className="space-y-4">
-                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 border-dashed text-center">
-                           <p className="text-xs font-black text-slate-400 uppercase mb-4">About Header Image</p>
-                           <img src={editContent.about?.image} className="w-full h-32 object-cover rounded-xl mb-4 shadow-sm" />
-                           <input type="file" accept="image/*" onChange={(e) => handleContentImageUpload('about', 'image', e.target.files[0])} className="text-xs" />
-                        </div>
-                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200">
-                           <p className="text-xs font-black text-slate-400 uppercase mb-4">Additional Images</p>
-                           <div className="grid grid-cols-2 gap-3 mb-4">
-                              {(editContent.about?.images || []).map((img, idx) => (
-                                <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden">
-                                  <img src={img} className="w-full h-full object-cover" />
-                                  <button onClick={() => removeSectionImage('about', idx)} className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14} /></button>
-                                </div>
-                              ))}
-                           </div>
-                           <label className="block w-full cursor-pointer bg-emerald-50 border-2 border-dashed border-emerald-200 rounded-xl p-4 hover:bg-emerald-100 transition-colors text-center">
-                              <Plus className="mx-auto mb-2 text-emerald-600" size={24} />
-                              <span className="text-emerald-600 font-bold text-xs uppercase">Add Image</span>
-                              <input type="file" accept="image/*" className="hidden" onChange={(e) => addSectionImage('about', e.target.files[0])} />
-                           </label>
-                        </div>
-                     </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">About Title</label>
+                      <input type="text" value={editContent.about?.title || ''} onChange={(e) => setEditContent({...editContent, about: {...editContent.about, title: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">About Description</label>
+                      <textarea rows={5} value={editContent.about?.description || ''} onChange={(e) => setEditContent({...editContent, about: {...editContent.about, description: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-medium text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
+                    </div>
                   </div>
                   <div className="flex justify-end pt-6 border-t border-slate-50">
                     <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold uppercase text-xs hover:bg-emerald-700 flex items-center gap-2 shadow-md transition-all disabled:opacity-50">
-                      {loading ? <Loader2 className="animate-spin" size={16} /> : <><Save size={16} /> Save Changes</>}
+                     {loading ? <Loader2 className="animate-spin" size={16} /> : <><Save size={16} /> Save Changes</>}
                     </button>
                   </div>
-               </div>
+                </div>
              </div>
            )}
 
@@ -775,6 +715,13 @@ const StaffDashboard = () => {
                       {fileData && (
                         <div className="mt-6 animate-in zoom-in">
                            <img src={fileData} className="w-full h-32 object-cover rounded-2xl mb-4 shadow-lg border-4 border-white" />
+                             <textarea
+                               rows={2}
+                               placeholder="Optional description for this photo"
+                               value={galleryDescription}
+                               onChange={(e) => setGalleryDescription(e.target.value)}
+                               className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 mb-3"
+                             />
                            <button onClick={saveToGallery} className="w-full bg-emerald-600 text-white font-black uppercase tracking-widest py-4 rounded-xl transition-all hover:bg-emerald-700 shadow-xl active:scale-95 text-xs">Confirm Post</button>
                         </div>
                       )}
@@ -782,16 +729,21 @@ const StaffDashboard = () => {
                 </div>
                 <div className="lg:col-span-8 bg-slate-50 p-8 rounded-[2.5rem] border border-slate-200 shadow-inner">
                    <h4 className="font-black text-slate-400 uppercase tracking-widest text-xs mb-6 ml-2">Active Gallery Feed ({dynamicImages.length})</h4>
-                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                       {dynamicImages.map(img => (
-                        <div key={img.id} className="relative group aspect-square rounded-2xl overflow-hidden shadow-sm bg-white border border-slate-200 transform transition-all hover:scale-105 hover:z-10 hover:shadow-xl">
-                          <img src={img.url} className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-red-900/80 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity backdrop-blur-sm" onClick={() => deleteImage(img.id)}>
-                            <div className="flex flex-col items-center gap-2 text-white">
-                              <Trash2 size={24} />
-                              <span className="font-black text-[9px] uppercase tracking-widest">Delete</span>
+                        <div key={img.id} className="relative rounded-2xl overflow-hidden shadow-sm bg-white border border-slate-200 transition-all hover:shadow-xl">
+                          <div className="aspect-square relative group">
+                            <img src={img.url} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-red-900/80 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity backdrop-blur-sm" onClick={() => deleteImage(img.id)}>
+                              <div className="flex flex-col items-center gap-2 text-white">
+                                <Trash2 size={24} />
+                                <span className="font-black text-[9px] uppercase tracking-widest">Delete</span>
+                              </div>
                             </div>
                           </div>
+                          {img.description && (
+                            <div className="px-3 py-2 text-sm text-slate-600 border-t border-slate-100">{img.description}</div>
+                          )}
                         </div>
                       ))}
                       {dynamicImages.length === 0 && <div className="col-span-full py-20 text-center border-2 border-dashed border-slate-200 rounded-2xl"><p className="text-slate-400 font-bold italic text-sm">Gallery is empty.</p></div>}
