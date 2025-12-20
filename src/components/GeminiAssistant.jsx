@@ -9,7 +9,16 @@ const GeminiAssistant = () => {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [apiKey, setApiKey] = useState(import.meta.env.VITE_GEMINI_API_KEY);
   const messagesEndRef = useRef(null);
+
+  // Log API key status on mount
+  useEffect(() => {
+    console.log('🔑 Gemini API Key loaded:', apiKey ? `${apiKey.substring(0, 10)}...${apiKey.substring(apiKey.length - 5)}` : 'MISSING');
+    if (!apiKey) {
+      console.error('❌ CRITICAL: Gemini API key is missing or undefined');
+    }
+  }, [apiKey]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -21,7 +30,7 @@ const GeminiAssistant = () => {
     setMessages(prev => [...prev, { role: 'user', text: userText }]);
     setLoading(true);
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -33,11 +42,21 @@ const GeminiAssistant = () => {
         })
       });
       const data = await response.json();
-      const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't process that. Please call us for help.";
-      setMessages(prev => [...prev, { role: 'model', text: aiResponse }]);
+      
+      // Log the actual response for debugging
+      console.log('Gemini API Response:', { status: response.status, data });
+      
+      if (!response.ok) {
+        console.error('API Error Status:', response.status, 'Message:', data?.error?.message);
+        const errorMsg = data?.error?.message || `API Error: ${response.status}`;
+        setMessages(prev => [...prev, { role: 'model', text: `⚠️ API Error: ${errorMsg}. Please contact support.` }]);
+      } else {
+        const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't process that. Please call us for help.";
+        setMessages(prev => [...prev, { role: 'model', text: aiResponse }]);
+      }
     } catch (error) {
       console.error("Gemini API Error:", error);
-      setMessages(prev => [...prev, { role: 'model', text: "Sorry, I couldn't reach the AI server. Please try again or call us." }]);
+      setMessages(prev => [...prev, { role: 'model', text: `⚠️ Connection Error: ${error.message}. Please try again or call us.` }]);
     } finally {
       setLoading(false);
     }
@@ -52,9 +71,14 @@ const GeminiAssistant = () => {
             <button onClick={() => setIsOpen(false)} className="hover:bg-emerald-700 p-1 rounded-full transition-colors"><X size={18} /></button>
           </div>
           <div className="flex-1 overflow-y-auto p-4 bg-slate-50 space-y-3 min-h-[300px]">
+            {!apiKey && (
+              <div className="bg-red-100 border border-red-300 text-red-700 p-3 rounded-lg text-xs">
+                ❌ <strong>API Key Error:</strong> Gemini API key is missing. Please check your .env file.
+              </div>
+            )}
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${msg.role === 'user' ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none shadow-sm'}`}>{msg.text}</div>
+                <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${msg.role === 'user' ? 'bg-emerald-600 text-white rounded-tr-none' : msg.text.includes('⚠️') ? 'bg-red-100 border border-red-300 text-red-700 rounded-tl-none' : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none shadow-sm'}`}>{msg.text}</div>
               </div>
             ))}
             {loading && <div className="flex justify-start"><div className="bg-white border border-slate-200 p-3 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-2 text-slate-500 text-xs font-bold"><Loader2 className="animate-spin" size={12} /> Analyzing...</div></div>}
