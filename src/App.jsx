@@ -156,6 +156,9 @@ const App = () => {
           ...fetchedData,
           pages: fetchedData.pages || DEFAULT_CONTENT.pages,
           global: { ...DEFAULT_CONTENT.global, ...(fetchedData.global || {}) },
+          home: { ...DEFAULT_CONTENT.home, ...(fetchedData.home || {}) },
+          services: { ...DEFAULT_CONTENT.services, ...(fetchedData.services || {}) },
+          community: { ...DEFAULT_CONTENT.community, ...(fetchedData.community || {}) },
           about: { ...DEFAULT_CONTENT.about, ...(fetchedData.about || {}) },
         });
       }
