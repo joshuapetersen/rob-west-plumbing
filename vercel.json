@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "npm install && npm run build",
   "outputDirectory": "dist",
   "public": true,
   "rewrites": [
@@ -7,5 +7,9 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "env": {
+    "VITE_GEMINI_API_KEY": "@vite_gemini_api_key"
+  },
+  "regions": ["iad1"]
 }
