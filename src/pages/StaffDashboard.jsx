@@ -72,12 +72,17 @@ const StaffDashboard = ({ onLogout }) => {
   // Login State
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
+  
   // Dashboard State
   const [activeTab, setActiveTab] = useState('content');
   const [editContent, setEditContent] = useState(DEFAULT_CONTENT);
   const [dynamicImages, setDynamicImages] = useState([]);
   const [fileData, setFileData] = useState(null);
   const [galleryDescription, setGalleryDescription] = useState('');
+  const [galleryFolder, setGalleryFolder] = useState('General');
+  const [editingImageId, setEditingImageId] = useState(null);
+  const [editingDescription, setEditingDescription] = useState('');
+  const [editingFolder, setEditingFolder] = useState('');
   const [success, setSuccess] = useState(false);
 
   // Strip large image arrays before saving to keep document under 1MB
@@ -223,21 +228,48 @@ const StaffDashboard = ({ onLogout }) => {
         url: fileData,
         createdAt: new Date().toISOString(),
         uploadedBy: user.email,
-        description: galleryDescription || ''
+        description: galleryDescription || '',
+        folder: galleryFolder || 'General'
       });
       setSuccess(true);
       setFileData(null);
       setGalleryDescription('');
+      setGalleryFolder('General');
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) { setError('Upload Failed'); } 
     finally { setLoading(false); }
   };
 
+  const updateGalleryPhoto = async (docId) => {
+    if (!editingImageId) return;
+    try {
+      await setDoc(
+        doc(db, 'artifacts', appId, 'public', 'data', 'gallery', docId),
+        {
+          description: editingDescription,
+          folder: editingFolder
+        },
+        { merge: true }
+      );
+      setEditingImageId(null);
+      setEditingDescription('');
+      setEditingFolder('');
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 2000);
+    } catch (err) {
+      setError('Failed to update photo');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
   const deleteImage = async (docId) => {
-    if (!confirm("Delete this image permanently?")) return;
+    if (!confirm('Delete this image permanently?')) return;
     try {
       await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gallery', docId));
-    } catch { setError("Delete Failed"); }
+    } catch {
+      setError('Delete Failed');
+      setTimeout(() => setError(''), 3000);
+    }
   };
 
   // 5. Team Logic
@@ -424,6 +456,31 @@ const StaffDashboard = ({ onLogout }) => {
   const triggerTestEmail = async () => {
       // Placeholder for EmailJS trigger
       alert(`Simulation: Verification email sent to ${user?.email}`);
+  };
+
+  // Backfill gallery items with default folder
+  const backfillGalleryFolders = async () => {
+    if (!user) return;
+    if (!confirm('Backfill all gallery items with default folder "General"? This sets folder for items missing it.')) return;
+    
+    setLoading(true);
+    try {
+      const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'gallery'));
+      let updated = 0;
+      for (const docSnap of snapshot.docs) {
+        if (!docSnap.data().folder) {
+          await setDoc(docSnap.ref, { folder: 'General' }, { merge: true });
+          updated++;
+        }
+      }
+      setSuccess(true);
+      setError(`✓ Backfill complete. Updated ${updated} item(s).`);
+      setTimeout(() => { setSuccess(false); setError(''); }, 4000);
+    } catch (err) {
+      setError('Backfill failed: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // --- RENDER: LOGIN WALL ---
@@ -761,35 +818,78 @@ const StaffDashboard = ({ onLogout }) => {
                       {fileData && (
                         <div className="mt-6 animate-in zoom-in">
                            <img src={fileData} className="w-full h-32 object-cover rounded-2xl mb-4 shadow-lg border-4 border-white" />
-                             <textarea
-                               rows={2}
-                               placeholder="Optional description for this photo"
-                               value={galleryDescription}
-                               onChange={(e) => setGalleryDescription(e.target.value)}
-                               className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 mb-3"
-                             />
+                           <textarea
+                             rows={2}
+                             placeholder="Optional description for this photo"
+                             value={galleryDescription}
+                             onChange={(e) => setGalleryDescription(e.target.value)}
+                             className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 mb-3"
+                           />
+                           <select
+                             value={galleryFolder}
+                             onChange={(e) => setGalleryFolder(e.target.value)}
+                             className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 mb-3"
+                           >
+                             <option value="General">General</option>
+                             <option value="Before & After">Before & After</option>
+                             <option value="Team">Team</option>
+                             <option value="Projects">Projects</option>
+                             <option value="Testimonials">Testimonials</option>
+                           </select>
                            <button onClick={saveToGallery} className="w-full bg-emerald-600 text-white font-black uppercase tracking-widest py-4 rounded-xl transition-all hover:bg-emerald-700 shadow-xl active:scale-95 text-xs">Confirm Post</button>
                         </div>
                       )}
                    </div>
                 </div>
                 <div className="lg:col-span-8 bg-slate-50 p-8 rounded-[2.5rem] border border-slate-200 shadow-inner">
-                   <h4 className="font-black text-slate-400 uppercase tracking-widest text-xs mb-6 ml-2">Active Gallery Feed ({dynamicImages.length})</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                   <div className="flex justify-between items-center mb-6 ml-2">
+                     <h4 className="font-black text-slate-400 uppercase tracking-widest text-xs">Active Gallery Feed ({dynamicImages.length})</h4>
+                     <button onClick={backfillGalleryFolders} disabled={loading} className="text-[10px] font-black text-slate-500 hover:text-emerald-600 uppercase tracking-wider bg-white px-3 py-1 rounded-lg border border-slate-200 hover:border-emerald-300 transition-all">
+                       {loading ? 'Backfilling...' : 'Backfill Folders'}
+                     </button>
+                   </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
                       {dynamicImages.map(img => (
-                        <div key={img.id} className="relative rounded-2xl overflow-hidden shadow-sm bg-white border border-slate-200 transition-all hover:shadow-xl">
+                        <div key={img.id} className="relative rounded-2xl overflow-hidden shadow-sm bg-white border border-slate-200 transition-all hover:shadow-xl" onMouseEnter={() => setEditingImageId(img.id)} onMouseLeave={() => setEditingImageId(null)}>
                           <div className="aspect-square relative group">
                             <img src={img.url} className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-red-900/80 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity backdrop-blur-sm" onClick={() => deleteImage(img.id)}>
-                              <div className="flex flex-col items-center gap-2 text-white">
-                                <Trash2 size={24} />
-                                <span className="font-black text-[9px] uppercase tracking-widest">Delete</span>
-                              </div>
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 cursor-pointer transition-opacity backdrop-blur-sm" >
+                              <button onClick={() => { setEditingImageId(img.id); setEditingDescription(img.description || ''); setEditingFolder(img.folder || 'General'); }} className="p-2 bg-emerald-600 hover:bg-emerald-700 rounded-full text-white transition-all" title="Edit">
+                                <Edit3 size={16} />
+                              </button>
+                              <button onClick={() => deleteImage(img.id)} className="p-2 bg-red-600 hover:bg-red-700 rounded-full text-white transition-all" title="Delete">
+                                <Trash2 size={16} />
+                              </button>
                             </div>
                           </div>
-                          {img.description && (
-                            <div className="px-3 py-2 text-sm text-slate-600 border-t border-slate-100">{img.description}</div>
-                          )}
+                          <div className="px-3 py-2 border-t border-slate-100">
+                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-wider mb-1">{img.folder || 'General'}</p>
+                            {editingImageId === img.id ? (
+                              <div className="space-y-2 animate-in zoom-in">
+                                <textarea
+                                  value={editingDescription}
+                                  onChange={(e) => setEditingDescription(e.target.value)}
+                                  placeholder="Description"
+                                  className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none resize-none"
+                                  rows={2}
+                                />
+                                <select
+                                  value={editingFolder}
+                                  onChange={(e) => setEditingFolder(e.target.value)}
+                                  className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                                >
+                                  <option value="General">General</option>
+                                  <option value="Before & After">Before & After</option>
+                                  <option value="Team">Team</option>
+                                  <option value="Projects">Projects</option>
+                                  <option value="Testimonials">Testimonials</option>
+                                </select>
+                                <button onClick={() => updateGalleryPhoto(img.id)} disabled={loading} className="w-full bg-emerald-600 text-white text-[9px] font-black uppercase py-1 rounded transition-all hover:bg-emerald-700 disabled:opacity-50">Save</button>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-slate-600">{img.description || '(no description)'}</p>
+                            )}
+                          </div>
                         </div>
                       ))}
                       {dynamicImages.length === 0 && <div className="col-span-full py-20 text-center border-2 border-dashed border-slate-200 rounded-2xl"><p className="text-slate-400 font-bold italic text-sm">Gallery is empty.</p></div>}

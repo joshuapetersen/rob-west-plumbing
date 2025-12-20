@@ -1,8 +1,23 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Droplets, Flower, Leaf, Wind, ImageIcon } from 'lucide-react';
 
-const CommunityPage = ({ dynamicImages = [], content }) => (
-  <div className="animate-in fade-in duration-500 pt-16">
+const CommunityPage = ({ dynamicImages = [], content }) => {
+  const [selectedFolder, setSelectedFolder] = useState('All');
+  
+  // Get unique folders and count
+  const folders = useMemo(() => {
+    const folderSet = new Set(dynamicImages.map(img => img.folder || 'General'));
+    return ['All', ...Array.from(folderSet)].sort();
+  }, [dynamicImages]);
+  
+  // Filter images by folder
+  const filteredImages = useMemo(() => {
+    if (selectedFolder === 'All') return dynamicImages;
+    return dynamicImages.filter(img => (img.folder || 'General') === selectedFolder);
+  }, [dynamicImages, selectedFolder]);
+
+  return (
+    <div className="animate-in fade-in duration-500 pt-16">
     <div className="max-w-7xl mx-auto px-4 pb-24">
       <div className="bg-emerald-950 rounded-2xl sm:rounded-[2rem] lg:rounded-[3rem] p-6 sm:p-12 md:p-20 lg:p-24 text-white relative overflow-hidden shadow-2xl mb-12 sm:mb-16">
         <div className="relative z-10 max-w-4xl">
@@ -26,18 +41,45 @@ const CommunityPage = ({ dynamicImages = [], content }) => (
       </div>
       <div className="space-y-8 sm:space-y-12">
          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between border-b border-slate-200 pb-6 sm:pb-8 gap-4 sm:gap-0"><h3 className="text-2xl sm:text-3xl font-black text-emerald-950 uppercase tracking-tighter">Community Gallery</h3><p className="text-slate-500 font-bold text-xs sm:text-sm uppercase tracking-widest">Live Updates</p></div>
-         {dynamicImages.length > 0 ? (
+         
+         {/* Folder Tabs */}
+         {folders.length > 1 && (
+           <div className="flex flex-wrap gap-2 sm:gap-3 border-b border-slate-200 pb-4">
+             {folders.map(folder => (
+               <button
+                 key={folder}
+                 onClick={() => setSelectedFolder(folder)}
+                 className={`px-4 sm:px-6 py-2 sm:py-3 rounded-full text-xs sm:text-sm font-black uppercase tracking-widest transition-all ${
+                   selectedFolder === folder
+                     ? 'bg-emerald-600 text-white shadow-lg'
+                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                 }`}
+               >
+                 {folder} {folder !== 'All' && `(${dynamicImages.filter(img => (img.folder || 'General') === folder).length})`}
+               </button>
+             ))}
+           </div>
+         )}
+         
+         {filteredImages.length > 0 ? (
            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
-             {dynamicImages.map((img) => (
+             {filteredImages.map((img) => (
                <div key={img.id} className="aspect-square bg-slate-100 rounded-2xl sm:rounded-3xl overflow-hidden border-2 sm:border-4 border-white shadow-md sm:shadow-lg hover:scale-[1.02] transition-transform group relative">
                   <img src={img.url} className="w-full h-full object-cover" onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/800x600/064e3b/ffffff?text=Image+Unavailable'; }} />
+                                <div className="absolute top-2 right-2 bg-black/60 text-white text-[10px] font-black px-2 py-1 rounded-lg uppercase">{img.folder || 'General'}</div>
+                                {img.description && (
+                                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent text-white p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <p className="text-xs font-medium line-clamp-2">{img.description}</p>
+                                  </div>
+                                )}
                </div>
              ))}
            </div>
          ) : (<div className="py-12 sm:py-20 text-center bg-slate-50 rounded-2xl sm:rounded-[3rem] border border-slate-200"><ImageIcon className="mx-auto text-slate-300 mb-3 sm:mb-4" size={48} /><h4 className="text-lg sm:text-xl font-bold text-slate-400 uppercase tracking-tight">Gallery Empty</h4></div>)}
       </div>
     </div>
-  </div>
-);
+    </div>
+  );
+};
 
 export default CommunityPage;
