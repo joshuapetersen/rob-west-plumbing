@@ -306,6 +306,9 @@ const StaffDashboard = () => {
               {loading ? <Loader2 className="animate-spin" /> : 'Secure Login'}
             </button>
           </form>
+          <div className="mt-6">
+            <button onClick={() => { try { localStorage.setItem('currentPage', 'home'); } catch {} window.location.reload(); }} className="text-slate-500 font-bold hover:text-emerald-600 uppercase text-xs transition-colors py-3 px-6 rounded-xl bg-slate-50 border border-slate-200 shadow-sm">Back to Site</button>
+          </div>
         </div>
       </div>
     );
