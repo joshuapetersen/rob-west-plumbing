@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createEditor, Transforms } from 'slate';
 import { Slate, Editable, withReact } from 'slate-react';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { collection, addDoc, doc, setDoc, deleteDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, deleteDoc, query, orderBy, onSnapshot, where, getDocs } from 'firebase/firestore';
 import { 
   Lock, LogOut, Upload, Image as ImageIcon, Loader2, AlertCircle, 
   Trash2, Camera, Save, Edit3, Plus, Layout, Eye, EyeOff, CheckCircle2,
@@ -233,7 +233,7 @@ const StaffDashboard = () => {
     } catch { setError("Image error"); }
   };
 
-  // Add image to section's images array
+  // Add image to section's images array and gallery
   const addSectionImage = async (section, file) => {
     if (!file) return;
     try {
@@ -246,12 +246,22 @@ const StaffDashboard = () => {
           images: [...currentImages, compressed] 
         } 
       }));
+      // Auto-add to gallery
+      if (user) {
+        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'gallery'), {
+          url: compressed,
+          createdAt: new Date().toISOString(),
+          uploadedBy: user.email,
+          section: section
+        });
+      }
     } catch { setError("Image error"); }
   };
 
-  // Remove image from section's images array
-  const removeSectionImage = (section, index) => {
+  // Remove image from section's images array and gallery
+  const removeSectionImage = async (section, index) => {
     const currentImages = [...(editContent[section]?.images || [])];
+    const imageToRemove = currentImages[index];
     currentImages.splice(index, 1);
     setEditContent(prev => ({ 
       ...prev, 
@@ -260,6 +270,21 @@ const StaffDashboard = () => {
         images: currentImages 
       } 
     }));
+    // Auto-remove from gallery
+    if (user && imageToRemove) {
+      try {
+        const galleryQuery = query(
+          collection(db, 'artifacts', appId, 'public', 'data', 'gallery'),
+          where('url', '==', imageToRemove)
+        );
+        const snapshot = await getDocs(galleryQuery);
+        for (const doc of snapshot.docs) {
+          await deleteDoc(doc.ref);
+        }
+      } catch (err) {
+        console.error('Failed to remove from gallery:', err);
+      }
+    }
   };
 
   // 7. Page Logic
