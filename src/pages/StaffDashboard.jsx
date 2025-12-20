@@ -423,14 +423,21 @@ const StaffDashboard = () => {
                {/* Services Section */}
               <div id="content-section-services" className="space-y-6 pt-8 border-t border-slate-50">
                   <h4 className="font-black text-slate-300 uppercase text-xs tracking-widest border-b border-slate-50 pb-2">Services Page</h4>
-                  <div className="space-y-4">
-                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Services Title</label>
-                        <input type="text" value={editContent.services?.title || ''} onChange={(e) => setEditContent({...editContent, services: {...editContent.services, title: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <div className="grid md:grid-cols-2 gap-8">
+                     <div className="space-y-4">
+                        <div className="space-y-2">
+                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Services Title</label>
+                           <input type="text" value={editContent.services?.title || ''} onChange={(e) => setEditContent({...editContent, services: {...editContent.services, title: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500" />
+                        </div>
+                        <div className="space-y-2">
+                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Services Description</label>
+                           <textarea rows={3} value={editContent.services?.description || ''} onChange={(e) => setEditContent({...editContent, services: {...editContent.services, description: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-medium text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
+                        </div>
                      </div>
-                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Services Description</label>
-                        <textarea rows={3} value={editContent.services?.description || ''} onChange={(e) => setEditContent({...editContent, services: {...editContent.services, description: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-medium text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
+                     <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 border-dashed text-center">
+                        <p className="text-xs font-black text-slate-400 uppercase mb-4">Services Page Image</p>
+                        <img src={editContent.services?.image} className="w-full h-32 object-cover rounded-xl mb-4 shadow-sm" />
+                        <input type="file" accept="image/*" onChange={(e) => handleContentImageUpload('services', 'image', e.target.files[0])} className="text-xs" />
                      </div>
                   </div>
                </div>
@@ -438,14 +445,21 @@ const StaffDashboard = () => {
                {/* Community Section */}
               <div id="content-section-community" className="space-y-6 pt-8 border-t border-slate-50">
                   <h4 className="font-black text-slate-300 uppercase text-xs tracking-widest border-b border-slate-50 pb-2">Community Page</h4>
-                  <div className="space-y-4">
-                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Community Title</label>
-                        <input type="text" value={editContent.community?.title || ''} onChange={(e) => setEditContent({...editContent, community: {...editContent.community, title: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <div className="grid md:grid-cols-2 gap-8">
+                     <div className="space-y-4">
+                        <div className="space-y-2">
+                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Community Title</label>
+                           <input type="text" value={editContent.community?.title || ''} onChange={(e) => setEditContent({...editContent, community: {...editContent.community, title: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500" />
+                        </div>
+                        <div className="space-y-2">
+                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Community Description</label>
+                           <textarea rows={3} value={editContent.community?.description || ''} onChange={(e) => setEditContent({...editContent, community: {...editContent.community, description: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-medium text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
+                        </div>
                      </div>
-                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Community Description</label>
-                        <textarea rows={3} value={editContent.community?.description || ''} onChange={(e) => setEditContent({...editContent, community: {...editContent.community, description: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 font-medium text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
+                     <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 border-dashed text-center">
+                        <p className="text-xs font-black text-slate-400 uppercase mb-4">Community Page Image</p>
+                        <img src={editContent.community?.image} className="w-full h-32 object-cover rounded-xl mb-4 shadow-sm" />
+                        <input type="file" accept="image/*" onChange={(e) => handleContentImageUpload('community', 'image', e.target.files[0])} className="text-xs" />
                      </div>
                   </div>
                </div>
