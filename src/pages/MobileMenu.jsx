@@ -11,7 +11,7 @@ const MobileMenu = ({ isOpen, onClose, setPage, content }) => {
         {visiblePages.map(p => (
           <button key={p.id} onClick={() => { setPage(p.id); onClose(); }} className="text-3xl font-black text-white uppercase tracking-tighter hover:text-emerald-400 transition-colors">{p.label}</button>
         ))}
-        <button onClick={() => { setPage('staff'); onClose(); }} className="text-3xl font-black text-slate-700 uppercase tracking-tighter hover:text-emerald-400 transition-colors">Staff</button>
+        <button onClick={() => { setPage('dashboard'); onClose(); }} className="text-3xl font-black text-slate-700 uppercase tracking-tighter hover:text-emerald-400 transition-colors">Staff</button>
         <a href={`tel:${content.global.phone.replace(/\D/g,'')}`} className="mt-8 bg-emerald-500 text-white px-8 py-4 rounded-2xl font-bold text-xl flex items-center justify-center gap-3 mx-auto w-fit">
           <Phone /> Call Now
         </a>
