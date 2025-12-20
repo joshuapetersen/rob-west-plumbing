@@ -130,18 +130,38 @@ const StaffDashboard = () => {
     }
   };
 
-  // 3. Save Logic (Persistence Fix)
+  // 3. Save Logic (Persistence Fix) - Ensure nested objects are properly merged
   const saveContent = async () => {
-    if (!user) return; // Strict Check
+    if (!user) {
+      setError("Not authenticated. Please log in first.");
+      return;
+    }
     setLoading(true);
     setError('');
     try {
       const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'site_content', 'main');
-      await setDoc(docRef, editContent, { merge: true });
+      
+      // Ensure all nested objects are properly structured
+      const dataToSave = {
+        pages: editContent.pages || [],
+        global: editContent.global || {},
+        home: editContent.home || {},
+        services: editContent.services || {},
+        community: editContent.community || {},
+        about: editContent.about || {},
+      };
+      
+      console.log('Saving content:', dataToSave);
+      console.log('User:', user.email);
+      console.log('AppId:', appId);
+      
+      // Use merge: true to preserve any other data, and send complete nested structures
+      await setDoc(docRef, dataToSave, { merge: true });
+      console.log('Save successful');
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      console.error(err);
+      console.error('Save error:', err);
       setError("Save Failed: " + err.message);
     } finally {
       setLoading(false);
