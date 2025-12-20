@@ -201,11 +201,21 @@ const StaffDashboard = () => {
     setEditContent(prev => ({ ...prev, about: { ...prev.about, team: [...(prev.about.team || []), newMember] } }));
   };
 
-  const removeTeamMember = (idx) => {
+  const removeTeamMember = async (idx) => {
     if (!confirm("Remove this member?")) return;
     const newTeam = [...(editContent.about.team || [])];
     newTeam.splice(idx, 1);
-    setEditContent(prev => ({ ...prev, about: { ...prev.about, team: newTeam } }));
+    const updated = { ...editContent, about: { ...editContent.about, team: newTeam } };
+    setEditContent(updated);
+    // Auto-save after deletion
+    if (user) {
+      try {
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'site_content', 'main');
+        await setDoc(docRef, updated, { merge: true });
+      } catch (err) {
+        console.error('Auto-save failed:', err);
+      }
+    }
   };
 
   const updateTeamMember = (idx, field, val) => {
@@ -226,13 +236,23 @@ const StaffDashboard = () => {
   // 7. Page Logic
 
   // Toggle visibility of a page by id
-  const togglePageVisibility = (pageId) => {
-    setEditContent(prev => ({
-      ...prev,
-      pages: prev.pages.map(page =>
+  const togglePageVisibility = async (pageId) => {
+    const updated = {
+      ...editContent,
+      pages: editContent.pages.map(page =>
         page.id === pageId ? { ...page, enabled: !page.enabled } : page
       )
-    }));
+    };
+    setEditContent(updated);
+    // Auto-save after toggle
+    if (user) {
+      try {
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'site_content', 'main');
+        await setDoc(docRef, updated, { merge: true });
+      } catch (err) {
+        console.error('Auto-save failed:', err);
+      }
+    }
   };
 
   // Navigate to Content tab and scroll to the matching section
@@ -246,12 +266,22 @@ const StaffDashboard = () => {
   };
 
   // Delete a custom page by id
-  const deleteCustomPage = (pageId) => {
+  const deleteCustomPage = async (pageId) => {
     if (!window.confirm('Delete this custom page?')) return;
-    setEditContent(prev => ({
-      ...prev,
-      pages: prev.pages.filter(page => page.id !== pageId)
-    }));
+    const updated = {
+      ...editContent,
+      pages: editContent.pages.filter(page => page.id !== pageId)
+    };
+    setEditContent(updated);
+    // Auto-save after deletion
+    if (user) {
+      try {
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'site_content', 'main');
+        await setDoc(docRef, updated, { merge: true });
+      } catch (err) {
+        console.error('Auto-save failed:', err);
+      }
+    }
   };
 
   // Update custom page content by id and field
