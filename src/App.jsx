@@ -106,6 +106,46 @@ const compressImage = (file) => {
   });
 };
 
+// --- ERROR BOUNDARY ---
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('[ErrorBoundary] Error caught:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-4">
+          <div className="max-w-md text-center">
+            <AlertCircle size={48} className="mx-auto mb-4 text-red-500" />
+            <h1 className="text-2xl font-black mb-2">Something went wrong</h1>
+            <p className="text-slate-300 mb-6">{this.state.error?.message || 'An unexpected error occurred'}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-lg font-bold transition-all"
+            >
+              Reload Page
+            </button>
+            <p className="text-xs text-slate-500 mt-4">Error details have been logged to console</p>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 // --- COMPONENTS ---
 
 const RobWestLogo = ({ className = "h-16 w-auto", logoUrl }) => {
@@ -333,4 +373,10 @@ const App = () => {
   );
 };
 
-export default App;
+export default function AppWithErrorBoundary() {
+  return (
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  );
+}
