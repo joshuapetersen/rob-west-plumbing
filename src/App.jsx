@@ -148,6 +148,15 @@ class ErrorBoundary extends React.Component {
 
 // --- COMPONENTS ---
 
+const LoadingFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-white">
+    <div className="text-center">
+      <Loader2 className="animate-spin mx-auto mb-4" size={48} color="#059669" />
+      <p className="text-slate-600 font-medium">Loading...</p>
+    </div>
+  </div>
+);
+
 const RobWestLogo = ({ className = "h-16 w-auto", logoUrl }) => {
   return (
     <div className={`${className} flex items-center justify-start overflow-hidden relative`}>
@@ -265,21 +274,21 @@ const App = () => {
   const renderPage = () => {
     const pageData = content.pages?.find(p => p.id === page);
     if (pageData && pageData.type === 'custom') {
-      return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><CustomPage content={content} pageData={pageData} /></Suspense>;
+      return <Suspense fallback={<LoadingFallback />}><CustomPage content={content} pageData={pageData} /></Suspense>;
     }
     switch (page) {
       case 'home':
-        return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><HomePage setPage={setPage} content={content} /></Suspense>;
+        return <Suspense fallback={<LoadingFallback />}><HomePage setPage={setPage} content={content} /></Suspense>;
       case 'services':
-        return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><ServicesPage content={content} /></Suspense>;
+        return <Suspense fallback={<LoadingFallback />}><ServicesPage content={content} /></Suspense>;
       case 'community':
-        return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><CommunityPage content={content} dynamicImages={dynamicImages} /></Suspense>;
+        return <Suspense fallback={<LoadingFallback />}><CommunityPage content={content} dynamicImages={dynamicImages} /></Suspense>;
       case 'about':
-        return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><AboutPage content={content} /></Suspense>;
+        return <Suspense fallback={<LoadingFallback />}><AboutPage content={content} /></Suspense>;
       case 'dashboard':
-        return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><StaffDashboard /></Suspense>;
+        return <Suspense fallback={<LoadingFallback />}><StaffDashboard /></Suspense>;
       default:
-        return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><HomePage setPage={setPage} content={content} /></Suspense>;
+        return <Suspense fallback={<LoadingFallback />}><HomePage setPage={setPage} content={content} /></Suspense>;
     }
   };
 
