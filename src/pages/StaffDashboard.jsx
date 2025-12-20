@@ -498,6 +498,31 @@ const StaffDashboard = () => {
                  <div className="flex justify-between items-center">
                    <h4 className="font-black text-slate-300 uppercase text-xs tracking-widest border-b border-slate-50 pb-2 flex-1">Global Settings</h4>
                  </div>
+                 {/* Logo Upload */}
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Logo Image</label>
+                    <div className="flex gap-3 items-start">
+                      <div className="flex-1">
+                        <input type="file" accept="image/*" onChange={async (e) => {
+                          try {
+                            if (e.target.files?.[0]) {
+                              const compressed = await compressImage(e.target.files[0]);
+                              setEditContent({...editContent, global: {...editContent.global, logo: compressed}});
+                              setSuccess(true);
+                              setTimeout(() => setSuccess(false), 3000);
+                            }
+                          } catch (err) {
+                            setError('Failed to upload logo: ' + err.message);
+                          }
+                        }} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-700 cursor-pointer hover:bg-slate-100 file:mr-3 file:px-3 file:py-2 file:bg-emerald-600 file:text-white file:rounded-lg file:cursor-pointer file:font-bold file:text-xs" />
+                      </div>
+                      {editContent.global?.logo && (
+                        <div className="w-20 h-20 rounded-xl border-2 border-emerald-500 overflow-hidden flex-shrink-0">
+                          <img src={editContent.global.logo} alt="Logo" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                    </div>
+                 </div>
                  <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Phone Number</label>
