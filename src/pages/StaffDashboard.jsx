@@ -249,7 +249,12 @@ const StaffDashboard = () => {
     if (!file) return;
     try {
       const compressed = await compressImage(file);
-      setEditContent(prev => ({ ...prev, [section]: { ...prev[section], [key]: compressed } }));
+      const updated = { ...editContent, [section]: { ...editContent[section], [key]: compressed } };
+      setEditContent(updated);
+      if (user) {
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'site_content', 'main');
+        await setDoc(docRef, updated, { merge: true });
+      }
     } catch { setError("Image error"); }
   };
 
@@ -259,15 +264,17 @@ const StaffDashboard = () => {
     try {
       const compressed = await compressImage(file);
       const currentImages = editContent[section]?.images || [];
-      setEditContent(prev => ({ 
-        ...prev, 
-        [section]: { 
-          ...prev[section], 
-          images: [...currentImages, compressed] 
-        } 
-      }));
-      // Auto-add to gallery
+      const updated = {
+        ...editContent,
+        [section]: {
+          ...editContent[section],
+          images: [...currentImages, compressed]
+        }
+      };
+      setEditContent(updated);
       if (user) {
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'site_content', 'main');
+        await setDoc(docRef, updated, { merge: true });
         await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'gallery'), {
           url: compressed,
           createdAt: new Date().toISOString(),
@@ -283,23 +290,27 @@ const StaffDashboard = () => {
     const currentImages = [...(editContent[section]?.images || [])];
     const imageToRemove = currentImages[index];
     currentImages.splice(index, 1);
-    setEditContent(prev => ({ 
-      ...prev, 
-      [section]: { 
-        ...prev[section], 
-        images: currentImages 
-      } 
-    }));
-    // Auto-remove from gallery
-    if (user && imageToRemove) {
+    const updated = {
+      ...editContent,
+      [section]: {
+        ...editContent[section],
+        images: currentImages
+      }
+    };
+    setEditContent(updated);
+    if (user) {
       try {
-        const galleryQuery = query(
-          collection(db, 'artifacts', appId, 'public', 'data', 'gallery'),
-          where('url', '==', imageToRemove)
-        );
-        const snapshot = await getDocs(galleryQuery);
-        for (const doc of snapshot.docs) {
-          await deleteDoc(doc.ref);
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'site_content', 'main');
+        await setDoc(docRef, updated, { merge: true });
+        if (imageToRemove) {
+          const galleryQuery = query(
+            collection(db, 'artifacts', appId, 'public', 'data', 'gallery'),
+            where('url', '==', imageToRemove)
+          );
+          const snapshot = await getDocs(galleryQuery);
+          for (const doc of snapshot.docs) {
+            await deleteDoc(doc.ref);
+          }
         }
       } catch (err) {
         console.error('Failed to remove from gallery:', err);
