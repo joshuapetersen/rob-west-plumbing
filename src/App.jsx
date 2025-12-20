@@ -141,13 +141,13 @@ const App = () => {
     if (!auth) return;
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      if (!currentUser) {
-        // Redirect to home if logged out
+      if (!currentUser && (page === 'staff' || page === 'dashboard')) {
+        // Redirect to home if logged out and trying to access dashboard
         setPage('home');
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [page]);
 
   // useEffect(() => {
   //   const unsubscribe = onSnapshot(doc(db, 'content', appId), (doc) => {
@@ -159,12 +159,6 @@ const App = () => {
   // }, []);
 
   const renderPage = () => {
-    // Normalize legacy 'staff' to 'dashboard' and block when unauthenticated
-    if ((page === 'staff' || page === 'dashboard') && !user) {
-      setPage('home');
-      return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><HomePage setPage={setPage} content={content} /></Suspense>;
-    }
-
     const pageData = content.pages?.find(p => p.id === page);
     if (pageData && pageData.type === 'custom') {
       return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><CustomPage content={content} pageData={pageData} /></Suspense>;
@@ -179,7 +173,7 @@ const App = () => {
       case 'about':
         return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><AboutPage content={content} /></Suspense>;
       case 'dashboard':
-        return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><StaffDashboard /></Suspense>;
+        return user ? <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><StaffDashboard /></Suspense> : <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><HomePage setPage={setPage} content={content} /></Suspense>;
       default:
         return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" size={48} /></div>}><HomePage setPage={setPage} content={content} /></Suspense>;
     }
