@@ -600,6 +600,17 @@ const StaffDashboard = ({ onLogout }) => {
                         </div>
                       )}
                     </div>
+                    {editContent.global?.logo && (
+                      <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                        <p className="text-[10px] font-bold text-blue-700 mb-2 uppercase tracking-widest">📱 App Icon Instructions</p>
+                        <p className="text-[9px] text-blue-600 leading-relaxed mb-2">To use a custom icon when users install your site as an app:</p>
+                        <ol className="text-[9px] text-blue-600 leading-relaxed list-decimal ml-4 space-y-1">
+                          <li>Save your logo as <code className="bg-blue-100 px-1 rounded">icon-192.png</code> (192x192px) and <code className="bg-blue-100 px-1 rounded">icon-512.png</code> (512x512px)</li>
+                          <li>Upload these files to the <code className="bg-blue-100 px-1 rounded">public</code> folder in your project</li>
+                          <li>The app icon will automatically update when users install</li>
+                        </ol>
+                      </div>
+                    )}
                  </div>
                  <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
