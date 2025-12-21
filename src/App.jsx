@@ -291,13 +291,8 @@ const App = () => {
   };
 
   const renderPage = () => {
-    // If trying to access dashboard, check authentication
+    // If trying to access dashboard, render it - login wall is inside StaffDashboard
     if (page === 'dashboard') {
-      if (!user) {
-        // Not authenticated - redirect to home
-        setPage('home');
-        return <Suspense fallback={<LoadingFallback />}><HomePage setPage={setPage} content={content} /></Suspense>;
-      }
       return <Suspense fallback={<LoadingFallback />}><StaffDashboard onLogout={() => { auth.signOut(); setPage('home'); }} /></Suspense>;
     }
 

@@ -526,27 +526,27 @@ const StaffDashboard = ({ onLogout }) => {
     <div className="min-h-screen bg-slate-50 p-4 lg:p-10 font-sans text-slate-900">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
-          <div>
-            <h2 className="text-4xl font-black uppercase tracking-tighter leading-none mb-1">Staff Dashboard</h2>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-10 gap-4">
+          <div className="w-full md:w-auto">
+            <h2 className="text-2xl md:text-4xl font-black uppercase tracking-tighter leading-none mb-2">Staff Dashboard</h2>
             <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                <p className="text-emerald-600 font-bold uppercase text-[10px] tracking-widest">Authenticated: {user.email}</p>
+                <p className="text-emerald-600 font-bold uppercase text-[9px] md:text-[10px] tracking-widest truncate">{user.email}</p>
             </div>
           </div>
-          <div className="flex gap-2">
-             <button onClick={triggerTestEmail} className="flex items-center gap-2 text-slate-500 font-bold hover:text-emerald-600 uppercase text-xs transition-colors py-3 px-6 rounded-xl bg-white border border-slate-200 shadow-sm"><Mail size={16} /> Test Email</button>
-             <button onClick={() => { signOut(auth); if (onLogout) onLogout(); }} className="flex items-center gap-2 text-white font-bold hover:bg-red-600 uppercase text-xs transition-colors py-3 px-6 rounded-xl bg-red-500 shadow-lg shadow-red-200"><LogOut size={16} /> Logout</button>
+          <div className="flex gap-2 w-full md:w-auto">
+             <button onClick={triggerTestEmail} className="flex items-center justify-center gap-2 text-slate-500 font-bold hover:text-emerald-600 uppercase text-xs transition-colors py-3 px-4 md:px-6 rounded-xl bg-white border border-slate-200 shadow-sm flex-1 md:flex-initial"><Mail size={16} /> <span className="hidden sm:inline">Test Email</span></button>
+             <button onClick={() => { signOut(auth); if (onLogout) onLogout(); }} className="flex items-center justify-center gap-2 text-white font-bold hover:bg-red-600 uppercase text-xs transition-colors py-3 px-4 md:px-6 rounded-xl bg-red-500 shadow-lg shadow-red-200 flex-1 md:flex-initial"><LogOut size={16} /> <span className="hidden sm:inline">Logout</span></button>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex gap-4 mb-10 overflow-x-auto pb-4 border-b border-slate-200">
+        <div className="flex gap-2 md:gap-4 mb-6 md:mb-10 overflow-x-auto pb-4 border-b border-slate-200">
           {['content', 'team', 'gallery', 'pages'].map(tab => (
             <button 
               key={tab} 
               onClick={() => setActiveTab(tab)} 
-              className={`px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-widest transition-all ${activeTab === tab ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-200 scale-105' : 'bg-white border border-slate-200 text-slate-400 hover:bg-slate-100'}`}
+              className={`px-4 md:px-8 py-3 md:py-4 rounded-xl md:rounded-2xl font-black uppercase text-[10px] md:text-xs tracking-widest transition-all whitespace-nowrap ${activeTab === tab ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-200 scale-105' : 'bg-white border border-slate-200 text-slate-400 hover:bg-slate-100'}`}
             >
               {tab}
             </button>
@@ -554,14 +554,14 @@ const StaffDashboard = ({ onLogout }) => {
         </div>
 
         {/* Main Editor Card */}
-        <div className="bg-white p-6 lg:p-12 rounded-[3rem] border border-slate-200 shadow-2xl shadow-slate-200/50">
-           <div className="flex justify-between items-center mb-10 pb-8 border-b border-slate-50">
-              <div>
-                <h3 className="text-2xl font-black uppercase tracking-tight">Edit {activeTab}</h3>
-                <p className="text-slate-400 text-sm font-bold mt-1">Changes are pushed live immediately.</p>
+        <div className="bg-white p-4 md:p-6 lg:p-12 rounded-2xl md:rounded-[3rem] border border-slate-200 shadow-2xl shadow-slate-200/50">
+           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-10 pb-6 md:pb-8 border-b border-slate-50 gap-4">
+              <div className="flex-1">
+                <h3 className="text-lg md:text-2xl font-black uppercase tracking-tight">Edit {activeTab}</h3>
+                <p className="text-slate-400 text-xs md:text-sm font-bold mt-1">Changes are pushed live immediately.</p>
               </div>
-              <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-emerald-700 flex items-center gap-3 shadow-xl transition-transform hover:scale-105 active:scale-95 disabled:opacity-50">
-                {loading ? <Loader2 className="animate-spin" /> : <><Save size={20} /> Save Changes</>}
+              <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-6 md:px-10 py-3 md:py-4 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] md:text-xs hover:bg-emerald-700 flex items-center justify-center gap-2 md:gap-3 shadow-xl transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 w-full md:w-auto">
+                {loading ? <Loader2 className="animate-spin" size={18} /> : <><Save size={18} className="md:w-5 md:h-5" /> <span>Save Changes</span></>}
               </button>
            </div>
 
@@ -631,7 +631,7 @@ const StaffDashboard = ({ onLogout }) => {
                     </div>
                  </div>
                  <div className="flex justify-end pt-4 border-t border-slate-50">
-                   <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold uppercase text-xs hover:bg-emerald-700 flex items-center gap-2 shadow-md transition-all disabled:opacity-50">
+                   <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-6 md:px-8 py-3 rounded-xl font-bold uppercase text-xs hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-md transition-all disabled:opacity-50 w-full md:w-auto">
                      {loading ? <Loader2 className="animate-spin" size={16} /> : <><Save size={16} /> Save Changes</>}
                    </button>
                  </div>
@@ -665,7 +665,7 @@ const StaffDashboard = ({ onLogout }) => {
                   </div>
                 </div>
                 <div className="flex justify-end pt-6 border-t border-slate-50">
-                  <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold uppercase text-xs hover:bg-emerald-700 flex items-center gap-2 shadow-md transition-all disabled:opacity-50">
+                  <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-6 md:px-8 py-3 rounded-xl font-bold uppercase text-xs hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-md transition-all disabled:opacity-50 w-full md:w-auto">
                    {loading ? <Loader2 className="animate-spin" size={16} /> : <><Save size={16} /> Save Changes</>}
                   </button>
                 </div>
@@ -687,7 +687,7 @@ const StaffDashboard = ({ onLogout }) => {
                     </div>
                   </div>
                   <div className="flex justify-end pt-6 border-t border-slate-50">
-                    <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold uppercase text-xs hover:bg-emerald-700 flex items-center gap-2 shadow-md transition-all disabled:opacity-50">
+                    <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-6 md:px-8 py-3 rounded-xl font-bold uppercase text-xs hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-md transition-all disabled:opacity-50 w-full md:w-auto">
                      {loading ? <Loader2 className="animate-spin" size={16} /> : <><Save size={16} /> Save Changes</>}
                     </button>
                   </div>
@@ -734,7 +734,7 @@ const StaffDashboard = ({ onLogout }) => {
                      </div>
                   </div>
                   <div className="flex justify-end pt-6 border-t border-slate-50">
-                    <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold uppercase text-xs hover:bg-emerald-700 flex items-center gap-2 shadow-md transition-all disabled:opacity-50">
+                    <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-6 md:px-8 py-3 rounded-xl font-bold uppercase text-xs hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-md transition-all disabled:opacity-50 w-full md:w-auto">
                       {loading ? <Loader2 className="animate-spin" size={16} /> : <><Save size={16} /> Save Changes</>}
                     </button>
                   </div>
@@ -756,7 +756,7 @@ const StaffDashboard = ({ onLogout }) => {
                     </div>
                   </div>
                   <div className="flex justify-end pt-6 border-t border-slate-50">
-                    <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold uppercase text-xs hover:bg-emerald-700 flex items-center gap-2 shadow-md transition-all disabled:opacity-50">
+                    <button onClick={saveContent} disabled={loading} className="bg-emerald-600 text-white px-6 md:px-8 py-3 rounded-xl font-bold uppercase text-xs hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-md transition-all disabled:opacity-50 w-full md:w-auto">
                      {loading ? <Loader2 className="animate-spin" size={16} /> : <><Save size={16} /> Save Changes</>}
                     </button>
                   </div>
